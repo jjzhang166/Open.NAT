@@ -30,16 +30,11 @@ namespace Mono.Nat
 {
 	public class DeviceEventArgs : EventArgs
 	{
-		private INatDevice device;
-		
-		public DeviceEventArgs(INatDevice device)
+	    public DeviceEventArgs(NatDevice device)
 		{
-			this.device = device;
+			Device = device;
 		}
-		
-		public INatDevice Device
-		{
-			get { return this.device; }
-		}
+
+	    public NatDevice Device { get; private set; }
 	}
 }

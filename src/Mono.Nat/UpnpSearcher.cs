@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Net;
 using Mono.Nat.Upnp;
@@ -11,52 +12,47 @@ namespace Mono.Nat
 {
     internal class UpnpSearcher : ISearcher
     {
-        internal const string WanIPUrn = "urn:schemas-upnp-org:service:WANIPConnection:1";
+        internal const string WanIPUrn = "urn:schemas-upnp-org:service:WANPPPConnection:1";
 
         private const int SearchPeriod = 5 * 60; // The time in seconds between each search
-		static UpnpSearcher instance = new UpnpSearcher();
-		public static List<UdpClient> sockets = CreateSockets();
-
-		public static UpnpSearcher Instance
-		{
-			get { return instance; }
-		}
+		public static readonly UpnpSearcher Instance = new UpnpSearcher();
+		public static List<UdpClient> Sockets = CreateSockets();
 
         public event EventHandler<DeviceEventArgs> DeviceFound;
         public event EventHandler<DeviceEventArgs> DeviceLost;
 
-        private List<INatDevice> devices;
-		private Dictionary<IPAddress, DateTime> lastFetched;
-        private DateTime nextSearch;
-        private IPEndPoint searchEndpoint;
+        private readonly List<NatDevice> _devices;
+		private readonly Dictionary<IPAddress, DateTime> _lastFetched;
+
+        public IPEndPoint SearchEndpoint { get; private set; }
+        public DateTime NextSearch { get; private set; }
 
         UpnpSearcher()
         {
-            devices = new List<INatDevice>();
-			lastFetched = new Dictionary<IPAddress, DateTime>();
-            searchEndpoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
+            _devices = new List<NatDevice>();
+			_lastFetched = new Dictionary<IPAddress, DateTime>();
+            SearchEndpoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
         }
 
 		static List<UdpClient> CreateSockets()
 		{
-			List<UdpClient> clients = new List<UdpClient>();
+			var clients = new List<UdpClient>();
 			try
 			{
-				foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces())
+                var ips = from networkInterface in NetworkInterface.GetAllNetworkInterfaces()
+                          from addressInfo in networkInterface.GetIPProperties().UnicastAddresses
+                          where addressInfo.Address.AddressFamily == AddressFamily.InterNetwork
+                          select addressInfo.Address;
+
+                foreach (var ipAddress in ips)
 				{
-					foreach (UnicastIPAddressInformation address in n.GetIPProperties().UnicastAddresses)
+					try
 					{
-						if (address.Address.AddressFamily == AddressFamily.InterNetwork)
-						{
-							try
-							{
-								clients.Add(new UdpClient(new IPEndPoint(address.Address, 0)));
-							}
-							catch
-							{
-								continue; // Move on to the next address.
-							}
-						}
+                        clients.Add(new UdpClient(new IPEndPoint(ipAddress, 0)));
+					}
+					catch (Exception)
+					{
+					    continue; // Move on to the next address.
 					}
 				}
 			}
@@ -69,32 +65,29 @@ namespace Mono.Nat
 
         public void Search()
 		{
-			foreach (UdpClient s in sockets)
+			foreach (UdpClient s in Sockets)
 			{
 				try
 				{
 					Search(s);
 				}
-				catch
+				catch (Exception)
 				{
-					// Ignore any search errors
+				    continue; // Ignore any search errors
 				}
 			}
 		}
 
         void Search(UdpClient client)
         {
-            nextSearch = DateTime.Now.AddSeconds(SearchPeriod);
+            NextSearch = DateTime.Now.AddSeconds(SearchPeriod);
             byte[] data = DiscoverDeviceMessage.Encode();
 
             // UDP is unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
-            for (int i = 0; i < 3; i++)
-                client.Send(data, data.Length, searchEndpoint);
-        }
-
-        public IPEndPoint SearchEndpoint
-        {
-            get { return searchEndpoint; }
+            for (var i = 0; i < 3; i++)
+            {
+                client.Send(data, data.Length, SearchEndpoint);
+            }
         }
 
         public void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
@@ -110,46 +103,45 @@ namespace Mono.Nat
 
 				if (NatUtility.Verbose)
 					NatUtility.Log("UPnP Response: {0}", dataString);
+
                 // If this device does not have a WANIPConnection service, then ignore it
                 // Technically i should be checking for WANIPConnection:1 and InternetGatewayDevice:1
                 // but there are some routers missing the '1'.
-                string log = "UPnP Response: Router advertised a '{0}' service";
-                StringComparison c = StringComparison.OrdinalIgnoreCase;
-                if (dataString.IndexOf("urn:schemas-upnp-org:service:WANIPConnection:", c) != -1)
-                    NatUtility.Log(log, "urn:schemas-upnp-org:service:WANIPConnection:");
-                else if (dataString.IndexOf("urn:schemas-upnp-org:device:InternetGatewayDevice:", c) != -1)
-                    NatUtility.Log(log, "urn:schemas-upnp-org:device:InternetGatewayDevice:");
-                else if (dataString.IndexOf("urn:schemas-upnp-org:service:WANPPPConnection:", c) != -1)
-                    NatUtility.Log(log, "urn:schemas-upnp-org:service:WANPPPConnection:");
-                else
-                    return;
+                var serviceNames = new[] {"WANIPConnection", "InternetGatewayDevice", "WANPPPConnection"};
+                var service = (from serviceName in serviceNames
+                                let serviceUrn = string.Format("urn:schemas-upnp-org:service:{0}:1", serviceName)
+                                where dataString.ContainsIgnoreCase(serviceUrn)
+                                select new {ServiceName = serviceName, ServiceUrn = serviceUrn}).FirstOrDefault();
+
+                if (service == null) return;
+                NatUtility.Log("UPnP Response: Router advertised a '{0}' service", service.ServiceName);
 
                 // We have an internet gateway device now
-                UpnpNatDevice d = new UpnpNatDevice(localAddress, dataString, WanIPUrn);
+                var device = new UpnpNatDevice(localAddress, dataString, service.ServiceUrn);
 
-                if (this.devices.Contains(d))
+                if (_devices.Contains(device))
                 {
                     // We already have found this device, so we just refresh it to let people know it's
                     // Still alive. If a device doesn't respond to a search, we dump it.
-                    this.devices[this.devices.IndexOf(d)].LastSeen = DateTime.Now;
+                    _devices[_devices.IndexOf(device)].Touch();
                 }
                 else
                 {
-
 					// If we send 3 requests at a time, ensure we only fetch the services list once
 					// even if three responses are received
-					if (lastFetched.ContainsKey(endpoint.Address))
+					if (_lastFetched.ContainsKey(endpoint.Address))
 					{
-						DateTime last = lastFetched[endpoint.Address];
+						var last = _lastFetched[endpoint.Address];
 						if ((DateTime.Now - last) < TimeSpan.FromSeconds(20))
 							return;
 					}
-					lastFetched[endpoint.Address] = DateTime.Now;
+					_lastFetched[endpoint.Address] = DateTime.Now;
 					
                     // Once we've parsed the information we need, we tell the device to retrieve it's service list
                     // Once we successfully receive the service list, the callback provided will be invoked.
-					NatUtility.Log("Fetching service list: {0}", d.HostEndPoint);
-                    d.GetServicesList(new NatDeviceCallback(DeviceSetupComplete));
+					NatUtility.Log("Fetching service list: {0}", device.DeviceInfo.HostEndPoint);
+                    device.GetServicesList();
+                    DeviceSetupComplete(device);
                 }
             }
             catch (Exception ex)
@@ -162,20 +154,16 @@ namespace Mono.Nat
             }
         }
 
-        public DateTime NextSearch
-        {
-            get { return nextSearch; }
-        }
 
-        private void DeviceSetupComplete(INatDevice device)
+        private void DeviceSetupComplete(NatDevice device)
         {
-            lock (this.devices)
+            lock (_devices)
             {
                 // We don't want the same device in there twice
-                if (devices.Contains(device))
+                if (_devices.Contains(device))
                     return;
 
-                devices.Add(device);
+                _devices.Add(device);
             }
 
             OnDeviceFound(new DeviceEventArgs(device));
@@ -183,8 +171,17 @@ namespace Mono.Nat
 
         private void OnDeviceFound(DeviceEventArgs args)
         {
-            if (DeviceFound != null)
-                DeviceFound(this, args);
+            var handler = DeviceFound;
+            if (handler != null)
+                handler(this, args);
+        }
+    }
+
+    static class StringExtensions
+    {
+        internal static bool ContainsIgnoreCase(this string s, string pattern)
+        {
+            return s.IndexOf(pattern, StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }

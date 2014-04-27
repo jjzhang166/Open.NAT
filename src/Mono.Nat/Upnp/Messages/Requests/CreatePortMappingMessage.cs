@@ -25,51 +25,45 @@
 //
 
 using System.Net;
-using System.IO;
 using System.Globalization;
 using System.Text;
-using System.Xml;
 
 namespace Mono.Nat.Upnp
 {
-    internal class CreatePortMappingMessage : MessageBase
+    internal class CreatePortMappingRequestMessage : RequestMessageBase
     {
-        #region Private Fields
+        private readonly IPAddress _localIpAddress;
+        private readonly Mapping _mapping;
 
-        private IPAddress localIpAddress;
-        private Mapping mapping;
-
-        #endregion
-
-
-        #region Constructors
-        public CreatePortMappingMessage(Mapping mapping, IPAddress localIpAddress, UpnpNatDevice device)
-            : base(device)
+        public CreatePortMappingRequestMessage(Mapping mapping, IPAddress localIpAddress)
         {
-            this.mapping = mapping;
-            this.localIpAddress = localIpAddress;
+            _mapping = mapping;
+            _localIpAddress = localIpAddress;
         }
-        #endregion
 
-
-        public override WebRequest Encode(out byte[] body)
+        public override string Action
         {
-            CultureInfo culture = CultureInfo.InvariantCulture;
+            get { return "AddPortMapping"; }
+        }
 
-            StringBuilder builder = new StringBuilder(256);
-            XmlWriter writer = CreateWriter(builder);
+        public override string GetBody()
+        {
+            var builder = new StringBuilder(256);
+            using(var writer = CreateWriter(builder))
+            {
+                WriteFullElement(writer, "NewRemoteHost", string.Empty);
+                WriteFullElement(writer, "NewExternalPort", _mapping.PublicPort.ToString(CultureInfo.InvariantCulture));
+                WriteFullElement(writer, "NewProtocol", _mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
+                WriteFullElement(writer, "NewInternalPort", _mapping.PrivatePort.ToString(CultureInfo.InvariantCulture));
+                WriteFullElement(writer, "NewInternalClient", _localIpAddress.ToString());
+                WriteFullElement(writer, "NewEnabled", "1");
+                WriteFullElement(writer, "NewPortMappingDescription",
+                                 string.IsNullOrEmpty(_mapping.Description) ? "Mono.Nat" : _mapping.Description);
+                WriteFullElement(writer, "NewLeaseDuration", _mapping.Lifetime.ToString(CultureInfo.InvariantCulture));
 
-            WriteFullElement(writer, "NewRemoteHost", string.Empty);
-            WriteFullElement(writer, "NewExternalPort", this.mapping.PublicPort.ToString(culture));
-            WriteFullElement(writer, "NewProtocol", this.mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
-            WriteFullElement(writer, "NewInternalPort", this.mapping.PrivatePort.ToString(culture));
-            WriteFullElement(writer, "NewInternalClient", this.localIpAddress.ToString());
-            WriteFullElement(writer, "NewEnabled", "1");
-            WriteFullElement(writer, "NewPortMappingDescription", string.IsNullOrEmpty(mapping.Description) ? "Mono.Nat" : mapping.Description);
-            WriteFullElement(writer, "NewLeaseDuration", mapping.Lifetime.ToString());
-
-            writer.Flush();
-            return CreateRequest("AddPortMapping", builder.ToString(), out body);
+                writer.Flush();
+                return builder.ToString();
+            }
         }
     }
 }

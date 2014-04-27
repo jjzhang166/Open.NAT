@@ -25,6 +25,7 @@
 //
 
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -36,143 +37,100 @@ namespace Mono.Nat
 {
 	public static class NatUtility
 	{
-        private static ManualResetEvent searching;
+        private static readonly ManualResetEvent Searching;
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
 		public static event EventHandler<DeviceEventArgs> DeviceLost;
         
         public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
 
-		private static TextWriter logger;
-		private static List<ISearcher> controllers;
-		private static bool verbose;
+	    private static readonly List<ISearcher> Controllers;
 
-		public static TextWriter Logger
-		{
-			get { return logger; }
-			set { logger = value; }
-		}
+	    public static TextWriter Logger { get; set; }
 
-		public static bool Verbose
-		{
-			get { return verbose; }
-			set { verbose = value; }
-		}
-		
-        static NatUtility()
+	    public static bool Verbose { get; set; }
+
+	    static NatUtility()
         {
-            searching = new ManualResetEvent(false);
+            Searching = new ManualResetEvent(false);
 
-            controllers = new List<ISearcher>();
-            controllers.Add(UpnpSearcher.Instance);
-            controllers.Add(PmpSearcher.Instance);
+            Controllers = new List<ISearcher>{
+                UpnpSearcher.Instance//, 
+                //PmpSearcher.Instance
+            };
 
-            foreach (ISearcher searcher in controllers)
+            foreach (var searcher in Controllers)
             {
-                searcher.DeviceFound += delegate(object sender, DeviceEventArgs args)
-                {
-                    if (DeviceFound != null)
-                        DeviceFound(sender, args);
-                };
-                searcher.DeviceLost += delegate(object sender, DeviceEventArgs args)
-                {
-                    if (DeviceLost != null)
-                        DeviceLost(sender, args);
-                };
+                searcher.DeviceFound += OnDeviceFound;
+                searcher.DeviceLost += OnDeviceLost;
             }
-            Thread t = new Thread((ThreadStart)delegate { SearchAndListen(); });
+            var t = new Thread(SearchAndListen);
             t.IsBackground = true;
             t.Start();
         }
 
-		internal static void Log(string format, params object[] args)
+	    private static void OnDeviceLost(object sender, DeviceEventArgs args)
+	    {
+	        var handler = DeviceLost;
+            if (handler != null) handler(sender, args);
+	    }
+
+	    private static void OnDeviceFound(object sender, DeviceEventArgs args)
+	    {
+	        var handler = DeviceFound;
+            if (handler != null) handler(sender, args);
+	    }
+
+	    internal static void Log(string format, params object[] args)
 		{
-			TextWriter logger = Logger;
-			if (logger != null)
-				logger.WriteLine(format, args);
+			var logger = Logger;
+			if (logger != null) logger.WriteLine(format, args);
 		}
 
         private static void SearchAndListen()
         {
             while (true)
             {
-                searching.WaitOne();
+                Searching.WaitOne();
 
                 try
                 {
-					Receive(UpnpSearcher.Instance, UpnpSearcher.sockets);
-					Receive(PmpSearcher.Instance, PmpSearcher.sockets);
+					Receive(UpnpSearcher.Instance, UpnpSearcher.Sockets);
+					//Receive(PmpSearcher.Instance, PmpSearcher.Sockets);
 
-                    foreach (ISearcher s in controllers)
-                        if (s.NextSearch < DateTime.Now)
-                        {
-                            Log("Searching for: {0}", s.GetType().Name);
-							s.Search();
-                        }
+                    foreach (var s in Controllers.Where(s => s.NextSearch < DateTime.Now))
+                    {
+                        Log("Searching for: {0}", s.GetType().Name);
+                        s.Search();
+                    }
                 }
                 catch (Exception e)
                 {
                     if (UnhandledException != null)
                         UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
                 }
-				System.Threading.Thread.Sleep(10);
+				Thread.Sleep(10);
             }
 		}
 
-		static void Receive (ISearcher searcher, List<UdpClient> clients)
+		static void Receive (ISearcher searcher, IEnumerable<UdpClient> clients)
 		{
-			IPEndPoint received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);
-			foreach (UdpClient client in clients)
+			var received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);
+			foreach (var client in clients.Where(c=>c.Available>0))
 			{
-				if (client.Available > 0)
-				{
-				    IPAddress localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
-					byte[] data = client.Receive(ref received);
-					searcher.Handle(localAddress, data, received);
-				}
+				var localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
+				var data = client.Receive(ref received);
+				searcher.Handle(localAddress, data, received);
             }
         }
 		
 		public static void StartDiscovery ()
 		{
-            searching.Set();
+            Searching.Set();
 		}
 
 		public static void StopDiscovery ()
 		{
-            searching.Reset();
-		}
-
-		[Obsolete ("This method serves no purpose and shouldn't be used")]
-		public static IPAddress[] GetLocalAddresses (bool includeIPv6)
-		{
-			List<IPAddress> addresses = new List<IPAddress> ();
-
-			IPHostEntry hostInfo = Dns.GetHostEntry (Dns.GetHostName ());
-			foreach (IPAddress address in hostInfo.AddressList) {
-				if (address.AddressFamily == AddressFamily.InterNetwork ||
-					(includeIPv6 && address.AddressFamily == AddressFamily.InterNetworkV6)) {
-					addresses.Add (address);
-				}
-			}
-			
-			return addresses.ToArray ();
-		}
-		
-		//checks if an IP address is a private address space as defined by RFC 1918
-		public static bool IsPrivateAddressSpace (IPAddress address)
-		{
-			byte[] ba = address.GetAddressBytes ();
-
-			switch ((int)ba[0]) {
-			case 10:
-				return true; //10.x.x.x
-			case 172:
-				return ((int)ba[1] & 16) != 0; //172.16-31.x.x
-			case 192:
-				return (int)ba[1] == 168; //192.168.x.x
-			default:
-				return false;
-			}
+            Searching.Reset();
 		}
 	}
 }

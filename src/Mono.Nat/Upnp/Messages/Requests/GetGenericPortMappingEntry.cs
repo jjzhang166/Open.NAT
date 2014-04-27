@@ -24,32 +24,36 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
-using System.Xml;
 
 namespace Mono.Nat.Upnp
 {
-    internal class GetGenericPortMappingEntry : MessageBase
+    internal class GetGenericPortMappingEntry : RequestMessageBase
     {
-        private int index;
+        private readonly int _index;
 
-        public GetGenericPortMappingEntry(int index, UpnpNatDevice device)
-            :base(device)
+        public GetGenericPortMappingEntry(int index)
         {
-            this.index = index;
+            _index = index;
         }
 
-        public override System.Net.WebRequest Encode(out byte[] body)
+        public override string Action
         {
-            StringBuilder sb = new StringBuilder(128);
-            XmlWriter writer = CreateWriter(sb);
+            get { return "GetGenericPortMappingEntry"; }
+        }
 
-            WriteFullElement(writer, "NewPortMappingIndex", index.ToString());
+        public override string GetBody()
+        {
+            var sb = new StringBuilder(128);
+            
+            using(var writer = CreateWriter(sb))
+            {
+                WriteFullElement(writer, "NewPortMappingIndex", _index.ToString(CultureInfo.InvariantCulture));
 
-            writer.Flush();
-            return CreateRequest("GetGenericPortMappingEntry", sb.ToString(), out body);
+                writer.Flush();
+                return sb.ToString();
+            }
         }
     }
 }

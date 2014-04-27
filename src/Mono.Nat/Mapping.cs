@@ -32,92 +32,59 @@ namespace Mono.Nat
 {
 	public class Mapping
 	{
-        private string description;
-        private DateTime expiration;
-        private int lifetime;
-        private int privatePort;
-		private Protocol protocol;
-		private int publicPort;
-		
+        public string Description { get; set; }
 
+        public Protocol Protocol { get; internal set; }
 
-		public Mapping (Protocol protocol, int privatePort, int publicPort)
+        public int PrivatePort { get; internal set; }
+
+        public int PublicPort { get; internal set; }
+
+        public int Lifetime { get; internal set; }
+
+        public DateTime Expiration { get; internal set; }
+
+        public Mapping(Protocol protocol, int privatePort, int publicPort)
 			: this (protocol, privatePort, publicPort, 0)
 		{
 		}
 		
 		public Mapping (Protocol protocol, int privatePort, int publicPort, int lifetime)
 		{
-			this.protocol = protocol;
-			this.privatePort = privatePort;
-			this.publicPort = publicPort;
-			this.lifetime = lifetime;
+			Protocol = protocol;
+			PrivatePort = privatePort;
+			PublicPort = publicPort;
+			Lifetime = lifetime;
 
 			if (lifetime == int.MaxValue)
-				this.expiration = DateTime.MaxValue;
+				Expiration = DateTime.MaxValue;
 			else if (lifetime == 0)
-				this.expiration = DateTime.Now;
+				Expiration = DateTime.Now;
 			else
-				this.expiration = DateTime.Now.AddSeconds (lifetime);
+				Expiration = DateTime.Now.AddSeconds (lifetime);
 		}
 
-        public string Description
-        {
-            get { return description; }
-            set { description = value; }
-        }
-		
-		public Protocol Protocol
+	    public bool IsExpired ()
 		{
-			get { return protocol; }
-			internal set { protocol = value; }
-		}
-
-		public int PrivatePort
-		{
-			get { return privatePort; }
-			internal set { privatePort = value; }
-		}
-		
-		public int PublicPort
-		{
-			get { return publicPort; }
-			internal set { publicPort = value; }
-		}
-		
-		public int Lifetime
-		{
-			get { return lifetime; }
-			internal set { lifetime = value; }
-		}
-		
-		public DateTime Expiration
-		{
-			get { return expiration; }
-			internal set { expiration = value; }
-		}
-		
-		public bool IsExpired ()
-		{
-			return expiration < DateTime.Now;
+			return Expiration < DateTime.Now;
 		}
 
 		public override bool Equals (object obj)
 		{
-			Mapping other = obj as Mapping;
-			return other == null ? false : this.protocol == other.protocol &&
-				this.privatePort == other.privatePort && this.publicPort == other.publicPort;
+			var other = obj as Mapping;
+			return other != null && (Protocol == other.Protocol &&
+			                         PrivatePort == other.PrivatePort && PublicPort == other.PublicPort);
 		}
 
 		public override int GetHashCode()
 		{
-			return this.protocol.GetHashCode() ^ this.privatePort.GetHashCode() ^ this.publicPort.GetHashCode();
+			return Protocol.GetHashCode() ^ PrivatePort.GetHashCode() ^ PublicPort.GetHashCode();
 		}
 
         public override string ToString( )
         {
             return String.Format( "Protocol: {0}, Public Port: {1}, Private Port: {2}, Description: {3}, Expiration: {4}, Lifetime: {5}", 
-                this.protocol, this.publicPort, this.privatePort, this.description, this.expiration, this.lifetime );
+                Protocol, PublicPort, PrivatePort, Description, Expiration, Lifetime );
         }
 	}
 }

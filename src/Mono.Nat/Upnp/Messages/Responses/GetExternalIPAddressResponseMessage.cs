@@ -24,30 +24,17 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net;
 
 namespace Mono.Nat.Upnp
 {
-    internal class GetExternalIPAddressResponseMessage : MessageBase
+    internal class GetExternalIPAddressResponseMessage : ResponseMessageBase
     {
-        public IPAddress ExternalIPAddress
-        {
-            get { return this.externalIPAddress; }
-        }
-        private IPAddress externalIPAddress;
+        public IPAddress ExternalIPAddress { get; private set; }
 
         public GetExternalIPAddressResponseMessage(string ip)
-            :base(null)
         {
-            this.externalIPAddress = IPAddress.Parse(ip);
-        }
-
-        public override WebRequest Encode(out byte[] body)
-        {
-            throw new NotImplementedException();
+            ExternalIPAddress = IPAddress.Parse(ip);
         }
     }
 }

@@ -10,18 +10,11 @@ namespace Mono.Nat
 {
     internal class PmpSearcher : ISearcher
     {
-		static PmpSearcher instance = new PmpSearcher();
-        public static List<UdpClient> sockets;
-        static Dictionary<UdpClient, List<IPEndPoint>> gatewayLists;
-		
-
-		public static PmpSearcher Instance
-		{
-			get { return instance; }
-		}
-
-        private int timeout;
-        private DateTime nextSearch;
+		internal static readonly PmpSearcher Instance = new PmpSearcher();
+        public static List<UdpClient> Sockets;
+        static Dictionary<UdpClient, List<IPEndPoint>> _gatewayLists;
+        private int _timeout;
+        private DateTime _nextSearch;
         public event EventHandler<DeviceEventArgs> DeviceFound;
         public event EventHandler<DeviceEventArgs> DeviceLost;
 
@@ -32,13 +25,13 @@ namespace Mono.Nat
 
         PmpSearcher()
         {
-            timeout = 250;
+            _timeout = 250;
         }
 
 		private static void CreateSocketsAndAddGateways()
 		{
-            sockets = new List<UdpClient>();
-            gatewayLists = new Dictionary<UdpClient,List<IPEndPoint>>();
+            Sockets = new List<UdpClient>();
+            _gatewayLists = new Dictionary<UdpClient,List<IPEndPoint>>();
 
             try
             {
@@ -72,7 +65,7 @@ namespace Mono.Nat
                                     continue; // Move on to the next address.
                                 }
 
-                                gatewayLists.Add(client, gatewayList); sockets.Add(client);
+                                _gatewayLists.Add(client, gatewayList); Sockets.Add(client);
                             }
                         }
                     }
@@ -86,7 +79,7 @@ namespace Mono.Nat
 
         public void Search()
 		{
-			foreach (UdpClient s in sockets)
+			foreach (UdpClient s in Sockets)
 			{
 				try
 				{
@@ -104,26 +97,26 @@ namespace Mono.Nat
             // Sort out the time for the next search first. The spec says the 
             // timeout should double after each attempt. Once it reaches 64 seconds
             // (and that attempt fails), assume no devices available
-            nextSearch = DateTime.Now.AddMilliseconds(timeout);
-            timeout *= 2;
+            _nextSearch = DateTime.Now.AddMilliseconds(_timeout);
+            _timeout *= 2;
 
             // We've tried 9 times as per spec, try searching again in 5 minutes
-            if (timeout == 128 * 1000)
+            if (_timeout == 128 * 1000)
             {
-                timeout = 250;
-                nextSearch = DateTime.Now.AddMinutes(10);
+                _timeout = 250;
+                _nextSearch = DateTime.Now.AddMinutes(10);
                 return;
             }
 
             // The nat-pmp search message. Must be sent to GatewayIP:53531
             byte[] buffer = new byte[] { PmpConstants.Version, PmpConstants.OperationCode };
-            foreach (IPEndPoint gatewayEndpoint in gatewayLists[client])
+            foreach (IPEndPoint gatewayEndpoint in _gatewayLists[client])
                 client.Send(buffer, buffer.Length, gatewayEndpoint);
         }
 
         bool IsSearchAddress(IPAddress address)
         {
-            foreach (List<IPEndPoint> gatewayList in gatewayLists.Values)
+            foreach (List<IPEndPoint> gatewayList in _gatewayLists.Values)
                 foreach (IPEndPoint gatewayEndpoint in gatewayList)
                     if (gatewayEndpoint.Address.Equals(address))
                         return true;
@@ -145,14 +138,14 @@ namespace Mono.Nat
                 NatUtility.Log("Non zero error: {0}", errorcode);
 
             IPAddress publicIp = new IPAddress(new byte[] { response[8], response[9], response[10], response[11] });
-            nextSearch = DateTime.Now.AddMinutes(5);
-            timeout = 250;
+            _nextSearch = DateTime.Now.AddMinutes(5);
+            _timeout = 250;
             OnDeviceFound(new DeviceEventArgs(new PmpNatDevice(endpoint.Address, publicIp)));
         }
 
         public DateTime NextSearch
         {
-            get { return nextSearch; }
+            get { return _nextSearch; }
         }
         private void OnDeviceFound(DeviceEventArgs args)
         {
