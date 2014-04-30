@@ -28,7 +28,7 @@ using System;
 using System.Diagnostics;
 using System.Xml;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat
 {
     internal class GetGenericPortMappingEntryResponseMessage : ResponseMessageBase
     {

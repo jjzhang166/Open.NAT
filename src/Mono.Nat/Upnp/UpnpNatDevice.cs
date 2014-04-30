@@ -30,9 +30,8 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat
 {
     internal class UpnpNatDeviceInfo
     {

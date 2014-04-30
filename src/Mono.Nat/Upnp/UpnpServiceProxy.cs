@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat
 {
     internal class UpnpServiceProxy
     {
@@ -92,7 +92,7 @@ namespace Mono.Nat.Upnp
         {
             NatUtility.Log("Initiating request to: {0}", _deviceInfo.ServiceControlUri);
 
-            var request = (HttpWebRequest)HttpWebRequest.Create(_deviceInfo.ServiceControlUri);
+            var request = (HttpWebRequest)WebRequest.Create(_deviceInfo.ServiceControlUri);
             request.KeepAlive = false;
             request.Method = "POST";
             request.ContentType = "text/xml; charset=\"utf-8\"";
@@ -169,7 +169,7 @@ namespace Mono.Nat.Upnp
         private T DecodeMessageFromResponse<T>(Stream s, long length) where T: ResponseMessageBase
         {
             var data = new StringBuilder();
-            var bytesRead = 0;
+            int bytesRead;
             var totalBytesRead = 0;
             var buffer = new byte[10240];
 
@@ -196,7 +196,7 @@ namespace Mono.Nat.Upnp
 
         private ResponseMessageBase Decode(string message)
         {
-            XmlNode node = null;
+            XmlNode node;
             var doc = new XmlDocument();
             doc.LoadXml(message);
 
@@ -248,7 +248,7 @@ namespace Mono.Nat.Upnp
                 var httpresponse = response as HttpWebResponse;
                 var s = response.GetResponseStream();
 
-                if (httpresponse.StatusCode != HttpStatusCode.OK)
+                if (httpresponse != null && httpresponse.StatusCode != HttpStatusCode.OK)
                 {
                     NatUtility.Log("Couldn't get services list: {0}", httpresponse.StatusCode);
                     return; // FIXME: This the best thing to do??

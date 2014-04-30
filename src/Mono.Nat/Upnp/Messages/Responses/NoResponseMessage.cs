@@ -24,8 +24,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-namespace Mono.Nat.Upnp
+namespace Mono.Nat
 {
     internal class NoResponseMessage : ResponseMessageBase
     {

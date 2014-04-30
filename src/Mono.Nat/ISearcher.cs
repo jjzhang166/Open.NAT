@@ -6,9 +6,9 @@ namespace Mono.Nat
     internal interface ISearcher
     {
         event EventHandler<DeviceEventArgs> DeviceFound;
-        event EventHandler<DeviceEventArgs> DeviceLost;
 
         void Search();
+        void Receive();
         void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
         DateTime NextSearch { get; }
     }

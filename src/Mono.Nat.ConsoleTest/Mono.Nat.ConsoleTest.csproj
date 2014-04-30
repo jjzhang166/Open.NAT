@@ -6,8 +6,8 @@
     <ProjectGuid>{E92CFA66-F518-4E66-B0BA-76A7808C939A}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <NoStandardLibraries>false</NoStandardLibraries>
-    <AssemblyName>Mono.Nat.Test</AssemblyName>
-    <RootNamespace>Mono.Nat.Test</RootNamespace>
+    <AssemblyName>Mono.Nat.ConsoleTest</AssemblyName>
+    <RootNamespace>Mono.Nat.ConsoleTest</RootNamespace>
     <ProductVersion>8.0.50727</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>

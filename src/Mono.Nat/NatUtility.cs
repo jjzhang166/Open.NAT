@@ -26,12 +26,10 @@
 
 using System;
 using System.Linq;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.NetworkInformation;
+using System.Threading.Tasks;
 
 namespace Mono.Nat
 {
@@ -39,40 +37,56 @@ namespace Mono.Nat
 	{
         private static readonly ManualResetEvent Searching;
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
-		public static event EventHandler<DeviceEventArgs> DeviceLost;
-        
         public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
 
-	    private static readonly List<ISearcher> Controllers;
+	    private static readonly List<ISearcher> Searchers;
 
 	    public static TextWriter Logger { get; set; }
-
 	    public static bool Verbose { get; set; }
 
 	    static NatUtility()
         {
             Searching = new ManualResetEvent(false);
 
-            Controllers = new List<ISearcher>{
-                UpnpSearcher.Instance//, 
+            Searchers = new List<ISearcher>{
+                new UpnpSearcher(new IPAddressesProvider())//, 
                 //PmpSearcher.Instance
             };
 
-            foreach (var searcher in Controllers)
+            foreach (var searcher in Searchers)
             {
                 searcher.DeviceFound += OnDeviceFound;
-                searcher.DeviceLost += OnDeviceLost;
             }
-            var t = new Thread(SearchAndListen);
-            t.IsBackground = true;
-            t.Start();
+
+            Task.Factory.StartNew(SearchAndListen, TaskCreationOptions.LongRunning);
         }
 
-	    private static void OnDeviceLost(object sender, DeviceEventArgs args)
-	    {
-	        var handler = DeviceLost;
-            if (handler != null) handler(sender, args);
-	    }
+        private static void SearchAndListen()
+        {
+            while (true)
+            {
+                Searching.WaitOne();
+
+                try
+                {
+                    foreach (var searcher in Searchers)
+                    {
+                        searcher.Receive();
+                    }
+
+                    foreach (var searcher in Searchers.Where(s => s.NextSearch < DateTime.Now))
+                    {
+                        searcher.Search();
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (UnhandledException != null)
+                        UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
+                }
+                Thread.Sleep(10);
+            }
+        }
 
 	    private static void OnDeviceFound(object sender, DeviceEventArgs args)
 	    {
@@ -86,43 +100,6 @@ namespace Mono.Nat
 			if (logger != null) logger.WriteLine(format, args);
 		}
 
-        private static void SearchAndListen()
-        {
-            while (true)
-            {
-                Searching.WaitOne();
-
-                try
-                {
-					Receive(UpnpSearcher.Instance, UpnpSearcher.Sockets);
-					//Receive(PmpSearcher.Instance, PmpSearcher.Sockets);
-
-                    foreach (var s in Controllers.Where(s => s.NextSearch < DateTime.Now))
-                    {
-                        Log("Searching for: {0}", s.GetType().Name);
-                        s.Search();
-                    }
-                }
-                catch (Exception e)
-                {
-                    if (UnhandledException != null)
-                        UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
-                }
-				Thread.Sleep(10);
-            }
-		}
-
-		static void Receive (ISearcher searcher, IEnumerable<UdpClient> clients)
-		{
-			var received = new IPEndPoint(IPAddress.Parse("192.168.0.1"), 5351);
-			foreach (var client in clients.Where(c=>c.Available>0))
-			{
-				var localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
-				var data = client.Receive(ref received);
-				searcher.Handle(localAddress, data, received);
-            }
-        }
-		
 		public static void StartDiscovery ()
 		{
             Searching.Set();

@@ -1,34 +1,23 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Net;
-using Mono.Nat.Pmp;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 namespace Mono.Nat
 {
-    internal class PmpSearcher : ISearcher
+    internal class PmpSearcher : Searcher
     {
-		internal static readonly PmpSearcher Instance = new PmpSearcher();
-        public static List<UdpClient> Sockets;
         static Dictionary<UdpClient, List<IPEndPoint>> _gatewayLists;
         private int _timeout;
-        private DateTime _nextSearch;
-        public event EventHandler<DeviceEventArgs> DeviceFound;
-        public event EventHandler<DeviceEventArgs> DeviceLost;
 
-        static PmpSearcher()
+        internal PmpSearcher()
         {
+            _timeout = 250;
             CreateSocketsAndAddGateways();
         }
 
-        PmpSearcher()
-        {
-            _timeout = 250;
-        }
-
-		private static void CreateSocketsAndAddGateways()
+		private void CreateSocketsAndAddGateways()
 		{
             Sockets = new List<UdpClient>();
             _gatewayLists = new Dictionary<UdpClient,List<IPEndPoint>>();
@@ -37,14 +26,29 @@ namespace Mono.Nat
             {
                 foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces())
                 {
-                    IPInterfaceProperties properties = n.GetIPProperties();
-                    List<IPEndPoint> gatewayList = new List<IPEndPoint>();
+                    if (n.OperationalStatus != OperationalStatus.Up && n.OperationalStatus != OperationalStatus.Unknown)
+                        continue;
+
+                    var properties = n.GetIPProperties();
+                    var gatewayList = new List<IPEndPoint>();
 
                     foreach (GatewayIPAddressInformation gateway in properties.GatewayAddresses)
                     {
                         if (gateway.Address.AddressFamily == AddressFamily.InterNetwork)
                         {
                             gatewayList.Add(new IPEndPoint(gateway.Address, PmpConstants.ServerPort));
+                        }
+                    }
+
+                    if (gatewayList.Count == 0)
+                    {
+                        /* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
+                        foreach (var gateway in properties.DnsAddresses)
+                        {
+                            if (gateway.AddressFamily == AddressFamily.InterNetwork)
+                            {
+                                gatewayList.Add(new IPEndPoint(gateway, PmpConstants.ServerPort));
+                            }
                         }
                     }
 
@@ -77,44 +81,29 @@ namespace Mono.Nat
             }
 		}
 
-        public void Search()
-		{
-			foreach (UdpClient s in Sockets)
-			{
-				try
-				{
-					Search(s);
-				}
-				catch
-				{
-					// Ignore any search errors
-				}
-			}
-		}
-
-		void Search (UdpClient client)
+		protected override void Search (UdpClient client)
         {
             // Sort out the time for the next search first. The spec says the 
             // timeout should double after each attempt. Once it reaches 64 seconds
             // (and that attempt fails), assume no devices available
-            _nextSearch = DateTime.Now.AddMilliseconds(_timeout);
+            NextSearch = DateTime.Now.AddMilliseconds(_timeout);
             _timeout *= 2;
 
             // We've tried 9 times as per spec, try searching again in 5 minutes
             if (_timeout == 128 * 1000)
             {
                 _timeout = 250;
-                _nextSearch = DateTime.Now.AddMinutes(10);
+                NextSearch = DateTime.Now.AddMinutes(10);
                 return;
             }
 
             // The nat-pmp search message. Must be sent to GatewayIP:53531
-            byte[] buffer = new byte[] { PmpConstants.Version, PmpConstants.OperationCode };
-            foreach (IPEndPoint gatewayEndpoint in _gatewayLists[client])
+            var buffer = new[] { PmpConstants.Version, PmpConstants.OperationCode };
+            foreach (var gatewayEndpoint in _gatewayLists[client])
                 client.Send(buffer, buffer.Length, gatewayEndpoint);
         }
 
-        bool IsSearchAddress(IPAddress address)
+        private static bool IsSearchAddress(IPAddress address)
         {
             foreach (List<IPEndPoint> gatewayList in _gatewayLists.Values)
                 foreach (IPEndPoint gatewayEndpoint in gatewayList)
@@ -123,7 +112,7 @@ namespace Mono.Nat
             return false;
         }
 
-        public void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
+        public override void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
         {
             if (!IsSearchAddress(endpoint.Address))
                 return;
@@ -137,20 +126,10 @@ namespace Mono.Nat
             if (errorcode != 0)
                 NatUtility.Log("Non zero error: {0}", errorcode);
 
-            IPAddress publicIp = new IPAddress(new byte[] { response[8], response[9], response[10], response[11] });
-            _nextSearch = DateTime.Now.AddMinutes(5);
+            var publicIp = new IPAddress(new[] { response[8], response[9], response[10], response[11] });
+            NextSearch = DateTime.Now.AddMinutes(5);
             _timeout = 250;
             OnDeviceFound(new DeviceEventArgs(new PmpNatDevice(endpoint.Address, publicIp)));
-        }
-
-        public DateTime NextSearch
-        {
-            get { return _nextSearch; }
-        }
-        private void OnDeviceFound(DeviceEventArgs args)
-        {
-            if (DeviceFound != null)
-                DeviceFound(this, args);
         }
     }
 }

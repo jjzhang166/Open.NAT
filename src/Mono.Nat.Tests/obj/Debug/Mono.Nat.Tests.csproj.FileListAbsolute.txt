@@ -1,0 +1,12 @@
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\obj\Debug\Mono.Nat.Tests.csprojResolveAssemblyReference.cache
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\bin\Debug\Mono.Nat.Tests.dll.config
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\bin\Debug\Mono.Nat.Tests.dll
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\bin\Debug\Mono.Nat.Tests.pdb
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\bin\Debug\Mono.Nat.dll
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\bin\Debug\Moq.dll
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\bin\Debug\nunit.framework.dll
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\bin\Debug\Mono.Nat.pdb
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\bin\Debug\Moq.xml
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\bin\Debug\nunit.framework.xml
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\obj\Debug\Mono.Nat.Tests.dll
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Tests\obj\Debug\Mono.Nat.Tests.pdb

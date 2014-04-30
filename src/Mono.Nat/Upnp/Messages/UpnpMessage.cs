@@ -24,16 +24,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Linq;
 using System.Xml;
 using System.Text;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat
 {
-    internal abstract class ResponseMessageBase
-    {
-    }
-
     internal abstract class RequestMessageBase
     {
         public abstract string Action { get; }

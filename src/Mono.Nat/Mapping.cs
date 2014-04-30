@@ -32,7 +32,7 @@ namespace Mono.Nat
 {
 	public class Mapping
 	{
-        public string Description { get; set; }
+        public string Description { get; internal set; }
 
         public Protocol Protocol { get; internal set; }
 
@@ -45,23 +45,35 @@ namespace Mono.Nat
         public DateTime Expiration { get; internal set; }
 
         public Mapping(Protocol protocol, int privatePort, int publicPort)
-			: this (protocol, privatePort, publicPort, 0)
+			: this (protocol, privatePort, publicPort, 0, "Mono.Nat")
 		{
 		}
+
+        public Mapping(Protocol protocol, int privatePort, int publicPort, string description)
+            : this(protocol, privatePort, publicPort, 0, description)
+        {
+        }
 		
-		public Mapping (Protocol protocol, int privatePort, int publicPort, int lifetime)
+		public Mapping (Protocol protocol, int privatePort, int publicPort, int lifetime, string description)
 		{
 			Protocol = protocol;
 			PrivatePort = privatePort;
 			PublicPort = publicPort;
 			Lifetime = lifetime;
+		    Description = description;
 
-			if (lifetime == int.MaxValue)
-				Expiration = DateTime.MaxValue;
-			else if (lifetime == 0)
-				Expiration = DateTime.Now;
-			else
-				Expiration = DateTime.Now.AddSeconds (lifetime);
+			switch (lifetime)
+			{
+			    case int.MaxValue:
+			        Expiration = DateTime.MaxValue;
+			        break;
+			    case 0:
+			        Expiration = DateTime.Now;
+			        break;
+			    default:
+			        Expiration = DateTime.Now.AddSeconds (lifetime);
+			        break;
+			}
 		}
 
 	    public bool IsExpired ()
@@ -73,7 +85,8 @@ namespace Mono.Nat
 		{
 			var other = obj as Mapping;
 			return other != null && (Protocol == other.Protocol &&
-			                         PrivatePort == other.PrivatePort && PublicPort == other.PublicPort);
+			                         PrivatePort == other.PrivatePort && 
+                                     PublicPort == other.PublicPort);
 		}
 
 		public override int GetHashCode()
@@ -83,8 +96,13 @@ namespace Mono.Nat
 
         public override string ToString( )
         {
-            return String.Format( "Protocol: {0}, Public Port: {1}, Private Port: {2}, Description: {3}, Expiration: {4}, Lifetime: {5}", 
-                Protocol, PublicPort, PrivatePort, Description, Expiration, Lifetime );
+            return string.Format(
+@"Protocol  : {0}, 
+Public Port : {1}, 
+Private Port: {2}, 
+Description : {3}, 
+Expiration  : {4}, Lifetime: {5}", 
+            Protocol, PublicPort, PrivatePort, Description, Expiration, Lifetime );
         }
 	}
 }

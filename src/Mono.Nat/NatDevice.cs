@@ -34,8 +34,9 @@ namespace Mono.Nat
 {
 	public abstract class NatDevice
 	{
-	    public DateTime LastSeen { get; private set; }
-        public void Touch()
+	    protected DateTime LastSeen { get; private set; }
+
+        internal void Touch()
         {
             LastSeen = DateTime.Now;
         }

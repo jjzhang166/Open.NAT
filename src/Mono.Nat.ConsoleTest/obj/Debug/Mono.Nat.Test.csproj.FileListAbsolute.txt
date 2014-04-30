@@ -1,0 +1,8 @@
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Test\bin\Debug\Mono.Nat.Test.exe
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Test\bin\Debug\Mono.Nat.Test.pdb
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Test\bin\Debug\Mono.Nat.dll
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Test\bin\Debug\Mono.Nat.pdb
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Test\obj\Debug\Mono.Nat.Test.exe
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Test\obj\Debug\Mono.Nat.Test.pdb
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Test\obj\Debug\Mono.Nat.Test.csprojResolveAssemblyReference.cache
+C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Test\bin\Debug\Mono.Nat.Test.exe.config

@@ -25,14 +25,13 @@
 //
 
 using System;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Mono.Nat.Pmp
+namespace Mono.Nat
 {
 	internal sealed class PmpNatDevice : NatDevice, IEquatable<PmpNatDevice> 
 	{
@@ -156,21 +155,18 @@ namespace Mono.Nat.Pmp
 					protocol = Protocol.Udp;
 
 				var resultCode = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 2));
-				var epoch = (uint)IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 4));
+				var epoch = IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 4));
 
-				var privatePort = (ushort)IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 8));
-				var publicPort = (ushort)IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 10));
+				var privatePort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 8));
+				var publicPort = IPAddress.NetworkToHostOrder (BitConverter.ToInt16 (data, 10));
 
 				var lifetime = (uint)IPAddress.NetworkToHostOrder (BitConverter.ToInt32 (data, 12));
 				
-				if (resultCode != PmpConstants.ResultCodeSuccess) {
+				if (privatePort < 0 || publicPort <0 || resultCode != PmpConstants.ResultCodeSuccess) {
                     throw new Exception("Invalid result code");
 				}
 				
-				if (lifetime == 0) {
-					//mapping was deleted
-					return;
-				} 
+				if (lifetime == 0) return; //mapping was deleted
 
                 //mapping was created
 				//TODO: verify that the private port+protocol are a match

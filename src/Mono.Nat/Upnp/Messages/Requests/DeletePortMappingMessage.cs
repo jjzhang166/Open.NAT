@@ -27,7 +27,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat
 {
 	internal class DeletePortMappingRequestMessage : RequestMessageBase
 	{

@@ -26,8 +26,10 @@
 
 using System;
 using System.Threading;
+using Mono.Nat.Enums;
+using Mono.Nat.EventArgs;
 
-namespace Mono.Nat.Test
+namespace Mono.Nat.ConsoleTest
 {
 	class NatTest
 	{
@@ -41,7 +43,6 @@ namespace Mono.Nat.Test
 		    NatUtility.Logger = Console.Out ;
 		    NatUtility.Verbose = true;
 			NatUtility.DeviceFound += DeviceFound;
-			NatUtility.DeviceLost += DeviceLost;
 			
 			NatUtility.StartDiscovery ();
 			
@@ -54,7 +55,7 @@ namespace Mono.Nat.Test
 
 		}
 		
-		private void DeviceFound (object sender, DeviceEventArgs args)
+		private async void DeviceFound (object sender, DeviceEventArgs args)
         {
             try
             {
@@ -65,17 +66,13 @@ namespace Mono.Nat.Test
 			    Console.ResetColor();
 			    Console.WriteLine ("Type: {0}", device.GetType().Name);
 
-                var t = device.GetExternalIPAsync();
-                t.Wait();
+                var ip = await device.GetExternalIPAsync();
 
-			    Console.WriteLine ("IP: {0}", t.Result);
-                var t1 = device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700));
-                t1.Wait();
+			    Console.WriteLine ("IP: {0}", ip);
+                await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700));
 			    Console.WriteLine ("Maped");
 
-                var mappingsT =  device.GetAllMappingsAsync();
-                mappingsT.Wait();
-                var mappings = mappingsT.Result;
+                var mappings =  await device.GetAllMappingsAsync();
                 foreach (var mapping in mappings)
                 {
                     Console.WriteLine(mapping.ToString());
@@ -110,14 +107,6 @@ namespace Mono.Nat.Test
 				Console.WriteLine (ex.Message);
 				Console.WriteLine (ex.StackTrace);
 			}
-		}
-		
-		private void DeviceLost (object sender, DeviceEventArgs args)
-		{
-			NatDevice device = args.Device;
-			
-			Console.WriteLine ("Device Lost");
-			Console.WriteLine ("Type: {0}", device.GetType().Name);
 		}
 	}
 }

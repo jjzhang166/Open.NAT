@@ -3,46 +3,37 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Net;
-using Mono.Nat.Upnp;
 using System.Diagnostics;
 using System.Net.Sockets;
-using System.Net.NetworkInformation;
 
 namespace Mono.Nat
 {
-    internal class UpnpSearcher : ISearcher
+    internal class UpnpSearcher : Searcher
     {
-        internal const string WanIPUrn = "urn:schemas-upnp-org:service:WANPPPConnection:1";
-
+        private readonly IIPAddressesProvider _ipprovider;
         private const int SearchPeriod = 5 * 60; // The time in seconds between each search
-		public static readonly UpnpSearcher Instance = new UpnpSearcher();
-		public static List<UdpClient> Sockets = CreateSockets();
-
-        public event EventHandler<DeviceEventArgs> DeviceFound;
-        public event EventHandler<DeviceEventArgs> DeviceLost;
+		public static readonly UpnpSearcher Instance = new UpnpSearcher(new IPAddressesProvider());
 
         private readonly List<NatDevice> _devices;
 		private readonly Dictionary<IPAddress, DateTime> _lastFetched;
 
-        public IPEndPoint SearchEndpoint { get; private set; }
-        public DateTime NextSearch { get; private set; }
+        private readonly IPEndPoint _searchEndpoint;
 
-        UpnpSearcher()
+        internal UpnpSearcher(IIPAddressesProvider ipprovider)
         {
+            _ipprovider = ipprovider;
+            Sockets = CreateSockets();
             _devices = new List<NatDevice>();
 			_lastFetched = new Dictionary<IPAddress, DateTime>();
-            SearchEndpoint = new IPEndPoint(IPAddress.Parse("239.255.255.250"), 1900);
+            _searchEndpoint = new IPEndPoint(WellKnownConstants.IPv4MulticastAddress, 1900);
         }
 
-		static List<UdpClient> CreateSockets()
+		private List<UdpClient> CreateSockets()
 		{
 			var clients = new List<UdpClient>();
 			try
 			{
-                var ips = from networkInterface in NetworkInterface.GetAllNetworkInterfaces()
-                          from addressInfo in networkInterface.GetIPProperties().UnicastAddresses
-                          where addressInfo.Address.AddressFamily == AddressFamily.InterNetwork
-                          select addressInfo.Address;
+                var ips = _ipprovider.GetIPAddresses();
 
                 foreach (var ipAddress in ips)
 				{
@@ -63,22 +54,7 @@ namespace Mono.Nat
 			return clients;
 		}
 
-        public void Search()
-		{
-			foreach (UdpClient s in Sockets)
-			{
-				try
-				{
-					Search(s);
-				}
-				catch (Exception)
-				{
-				    continue; // Ignore any search errors
-				}
-			}
-		}
-
-        void Search(UdpClient client)
+        protected override void Search(UdpClient client)
         {
             NextSearch = DateTime.Now.AddSeconds(SearchPeriod);
             byte[] data = DiscoverDeviceMessage.Encode();
@@ -86,11 +62,11 @@ namespace Mono.Nat
             // UDP is unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
             for (var i = 0; i < 3; i++)
             {
-                client.Send(data, data.Length, SearchEndpoint);
+                client.Send(data, data.Length, _searchEndpoint);
             }
         }
 
-        public void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
+        public override void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
         {
             // Convert it to a string for easy parsing
             string dataString = null;
@@ -167,13 +143,6 @@ namespace Mono.Nat
             }
 
             OnDeviceFound(new DeviceEventArgs(device));
-        }
-
-        private void OnDeviceFound(DeviceEventArgs args)
-        {
-            var handler = DeviceFound;
-            if (handler != null)
-                handler(this, args);
         }
     }
 

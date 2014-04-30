@@ -24,13 +24,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
-using System.Xml;
-using System.Net;
 
-namespace Mono.Nat.Upnp
+namespace Mono.Nat
 {
 	internal class GetSpecificPortMappingEntryRequestMessage : RequestMessageBase
 	{
@@ -54,7 +51,7 @@ namespace Mono.Nat.Upnp
 			using(var writer = CreateWriter(sb))
 			{
 			    WriteFullElement(writer, "NewRemoteHost", string.Empty);
-			    WriteFullElement(writer, "NewExternalPort", _externalPort.ToString());
+			    WriteFullElement(writer, "NewExternalPort", _externalPort.ToString(CultureInfo.InvariantCulture));
 			    WriteFullElement(writer, "NewProtocol", _protocol == Protocol.Tcp ? "TCP" : "UDP");
 			    writer.Flush();
 

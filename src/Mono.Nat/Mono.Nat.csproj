@@ -50,18 +50,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AbstractNatDevice.cs" />
+    <Compile Include="NatDevice.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Enums\ProtocolType.cs" />
     <Compile Include="EventArgs\DeviceEventArgs.cs" />
     <Compile Include="Exceptions\MappingException.cs" />
-    <Compile Include="INatDevice.cs" />
     <Compile Include="ISearcher.cs" />
     <Compile Include="Mapping.cs" />
     <Compile Include="NatUtility.cs" />
     <Compile Include="PmpSearcher.cs" />
     <Compile Include="Pmp\PmpConstants.cs" />
     <Compile Include="Pmp\PmpNatDevice.cs" />
+    <Compile Include="Searcher.cs" />
     <Compile Include="UpnpSearcher.cs" />
     <Compile Include="Upnp\Messages\DiscoverDeviceMessage.cs" />
     <Compile Include="Upnp\Messages\Requests\CreatePortMappingMessage.cs" />
@@ -69,12 +69,16 @@
     <Compile Include="Upnp\Messages\Requests\GetExternalIPAddressMessage.cs" />
     <Compile Include="Upnp\Messages\Requests\GetGenericPortMappingEntry.cs" />
     <Compile Include="Upnp\Messages\Requests\GetSpecificPortMappingEntryMessage.cs" />
+    <Compile Include="Upnp\Messages\ResponseMessageBase.cs" />
     <Compile Include="Upnp\Messages\Responses\NoResponseMessage.cs" />
     <Compile Include="Upnp\Messages\Responses\GetExternalIPAddressResponseMessage.cs" />
     <Compile Include="Upnp\Messages\Responses\GetGenericPortMappingEntryResponseMessage.cs" />
     <Compile Include="Upnp\Messages\UpnpMessage.cs" />
     <Compile Include="Upnp\UpnpServiceProxy.cs" />
     <Compile Include="Upnp\UpnpNatDevice.cs" />
+    <Compile Include="Utils\IIPAddressesProvider.cs" />
+    <Compile Include="Utils\IPAddressesProvider.cs" />
+    <Compile Include="WellKnownConstants.cs" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />

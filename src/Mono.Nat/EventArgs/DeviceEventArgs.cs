@@ -24,11 +24,9 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-
 namespace Mono.Nat
 {
-	public class DeviceEventArgs : EventArgs
+	public class DeviceEventArgs : System.EventArgs
 	{
 	    public DeviceEventArgs(NatDevice device)
 		{
