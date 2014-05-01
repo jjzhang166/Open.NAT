@@ -5,19 +5,15 @@ using System.Text;
 using System.Net;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace Mono.Nat
 {
     internal class UpnpSearcher : Searcher
     {
         private readonly IIPAddressesProvider _ipprovider;
-        private const int SearchPeriod = 5 * 60; // The time in seconds between each search
-		public static readonly UpnpSearcher Instance = new UpnpSearcher(new IPAddressesProvider());
-
         private readonly List<NatDevice> _devices;
 		private readonly Dictionary<IPAddress, DateTime> _lastFetched;
-
-        private readonly IPEndPoint _searchEndpoint;
 
         internal UpnpSearcher(IIPAddressesProvider ipprovider)
         {
@@ -25,7 +21,6 @@ namespace Mono.Nat
             Sockets = CreateSockets();
             _devices = new List<NatDevice>();
 			_lastFetched = new Dictionary<IPAddress, DateTime>();
-            _searchEndpoint = new IPEndPoint(WellKnownConstants.IPv4MulticastAddress, 1900);
         }
 
 		private List<UdpClient> CreateSockets()
@@ -56,13 +51,17 @@ namespace Mono.Nat
 
         protected override void Search(UdpClient client)
         {
-            NextSearch = DateTime.Now.AddSeconds(SearchPeriod);
-            byte[] data = DiscoverDeviceMessage.Encode();
+            if(!IsSearchTime) return;
+
+            NextSearch = DateTime.Now.AddMinutes(5);
+
+            var data = DiscoverDeviceMessage.Encode();
+            var searchEndpoint = new IPEndPoint(WellKnownConstants.IPv4MulticastAddress, 1900);
 
             // UDP is unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
             for (var i = 0; i < 3; i++)
             {
-                client.Send(data, data.Length, _searchEndpoint);
+                client.Send(data, data.Length, searchEndpoint);
             }
         }
 
@@ -100,25 +99,23 @@ namespace Mono.Nat
                     // We already have found this device, so we just refresh it to let people know it's
                     // Still alive. If a device doesn't respond to a search, we dump it.
                     _devices[_devices.IndexOf(device)].Touch();
+                    return;
                 }
-                else
-                {
-					// If we send 3 requests at a time, ensure we only fetch the services list once
-					// even if three responses are received
-					if (_lastFetched.ContainsKey(endpoint.Address))
-					{
-						var last = _lastFetched[endpoint.Address];
-						if ((DateTime.Now - last) < TimeSpan.FromSeconds(20))
-							return;
-					}
-					_lastFetched[endpoint.Address] = DateTime.Now;
+				// If we send 3 requests at a time, ensure we only fetch the services list once
+				// even if three responses are received
+				if (_lastFetched.ContainsKey(endpoint.Address))
+				{
+					var last = _lastFetched[endpoint.Address];
+					if ((DateTime.Now - last) < TimeSpan.FromSeconds(20))
+						return;
+				}
+				_lastFetched[endpoint.Address] = DateTime.Now;
 					
-                    // Once we've parsed the information we need, we tell the device to retrieve it's service list
-                    // Once we successfully receive the service list, the callback provided will be invoked.
-					NatUtility.Log("Fetching service list: {0}", device.DeviceInfo.HostEndPoint);
-                    device.GetServicesList();
-                    DeviceSetupComplete(device);
-                }
+                // Once we've parsed the information we need, we tell the device to retrieve it's service list
+                // Once we successfully receive the service list, the callback provided will be invoked.
+				NatUtility.Log("Fetching service list: {0}", device.DeviceInfo.HostEndPoint);
+                device.GetServicesList();
+                DeviceSetupComplete(device);
             }
             catch (Exception ex)
             {

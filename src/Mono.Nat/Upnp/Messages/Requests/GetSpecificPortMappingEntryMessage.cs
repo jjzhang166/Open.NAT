@@ -34,7 +34,8 @@ namespace Mono.Nat
 		private readonly Protocol _protocol;
         private readonly int _externalPort;
 
-		public GetSpecificPortMappingEntryRequestMessage(Protocol protocol, int externalPort)
+		public GetSpecificPortMappingEntryRequestMessage(Protocol protocol, int externalPort, string serviceType)
+            : base(serviceType)
 		{
 			_protocol = protocol;
 			_externalPort = externalPort;
@@ -45,7 +46,7 @@ namespace Mono.Nat
 	        get { return "GetSpecificPortMappingEntry"; }
 	    }
 
-	    public override string GetBody()
+	    public override string ToXml()
 		{
 			var sb = new StringBuilder(64);
 			using(var writer = CreateWriter(sb))

@@ -25,3 +25,9 @@ src/Mono.Nat/mono.nat.pc
 xdb.il
 xdb.s
 
+# Ignore VS files
+*.user
+*.suo
+
+#ignore Resharper folders
+src/_ReSharper.Mono.Nat

@@ -53,16 +53,16 @@ namespace Mono.Nat
 
         public IPAddress LocalAddress { get; internal set; }
 
-        public IPEndPoint HostEndPoint 
-        { 
-            get { return new IPEndPoint(IPAddress.Parse(Ip), Port); }
-        }
-
         public string ServiceDescriptionPart { get; internal set; }
 
         public string ServiceType { get; internal set; }
 
         public string ServiceControlPart { get; internal set; }
+
+        public IPEndPoint HostEndPoint
+        {
+            get { return new IPEndPoint(IPAddress.Parse(Ip), Port); }
+        }
 
         public Uri ServiceControlUri
         {

@@ -31,9 +31,15 @@ namespace Mono.Nat
 {
     internal abstract class RequestMessageBase
     {
+        private readonly string _serviceType;
         public abstract string Action { get; }
-        public abstract string GetBody();
+        public abstract string ToXml();
  
+        protected RequestMessageBase(string serviceType)
+        {
+            _serviceType = serviceType;
+        }
+
         protected static void WriteFullElement(XmlWriter writer, string element, string value)
         {
             writer.WriteStartElement(element);
@@ -46,5 +52,22 @@ namespace Mono.Nat
             var settings = new XmlWriterSettings {ConformanceLevel = ConformanceLevel.Fragment};
             return XmlWriter.Create(sb, settings);
         }
+
+        public byte[] Envelop()
+        {
+            string bodyString = "<s:Envelope "
+                                + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
+                                + "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
+                                + "<s:Body>"
+                                + "<u:" + Action + " "
+                                + "xmlns:u=\"" + _serviceType + "\">"
+                                + ToXml()
+                                + "</u:" + Action + ">"
+                                + "</s:Body>"
+                                + "</s:Envelope>\r\n\r\n";
+
+            return Encoding.UTF8.GetBytes(bodyString);
+        }
+
     }
 }

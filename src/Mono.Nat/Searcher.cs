@@ -50,6 +50,11 @@ namespace Mono.Nat
 
         public abstract void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
 
-        public DateTime NextSearch { get; protected set; }
+        protected DateTime NextSearch { get; set; }
+
+        public bool IsSearchTime
+        {
+            get { return NextSearch < DateTime.Now; }
+        }
     }
 }

@@ -33,7 +33,8 @@ namespace Mono.Nat
     {
         private readonly int _index;
 
-        public GetGenericPortMappingEntry(int index)
+        public GetGenericPortMappingEntry(int index, string serviceType)
+            : base(serviceType)
         {
             _index = index;
         }
@@ -43,7 +44,7 @@ namespace Mono.Nat
             get { return "GetGenericPortMappingEntry"; }
         }
 
-        public override string GetBody()
+        public override string ToXml()
         {
             var sb = new StringBuilder(128);
             

@@ -20,22 +20,22 @@ namespace Mono.Nat
 
         public async Task<IPAddress> GetExternalIPAsync()
         {
-            var message = new GetExternalIPAddressRequestMessage();
+            var message = new GetExternalIPAddressRequestMessage(_deviceInfo.ServiceType);
             var response =
-                await PerformRequestAsync<GetExternalIPAddressResponseMessage>(message);
+                await RequestAsync<GetExternalIPAddressResponseMessage>(message);
             return response.ExternalIPAddress;
         }
 
         public async Task CreatePortMapAsync(Mapping mapping)
         {
-            var message = new CreatePortMappingRequestMessage(mapping, _deviceInfo.LocalAddress);
-            await PerformRequestAsync<NoResponseMessage>(message);
+            var message = new CreatePortMappingRequestMessage(mapping, _deviceInfo.LocalAddress, _deviceInfo.ServiceType);
+            await RequestAsync<NoResponseMessage>(message);
         }
 
         public async Task DeletePortMapAsync(Mapping mapping)
         {
-            var message = new DeletePortMappingRequestMessage(mapping);
-            await PerformRequestAsync<NoResponseMessage>(message);
+            var message = new DeletePortMappingRequestMessage(mapping, _deviceInfo.ServiceType);
+            await RequestAsync<NoResponseMessage>(message);
         }
 
         public async Task<Mapping[]> GetAllMappingsAsync()
@@ -47,15 +47,17 @@ namespace Mono.Nat
             {
                 try
                 {
-                    var message = new GetGenericPortMappingEntry(index);
+                    var message = new GetGenericPortMappingEntry(index, _deviceInfo.ServiceType);
 
-                    var responseMessage = await PerformRequestAsync<GetGenericPortMappingEntryResponseMessage>(message);
+                    var responseMessage = await RequestAsync<GetGenericPortMappingEntryResponseMessage>(message);
 
                     if (responseMessage == null) break;
 
-                    var mapping = new Mapping(responseMessage.Protocol, responseMessage.InternalPort,
-                                              responseMessage.ExternalPort, responseMessage.LeaseDuration);
-                    mapping.Description = responseMessage.PortMappingDescription;
+                    var mapping = new Mapping(responseMessage.Protocol
+                        , responseMessage.InternalPort
+                        , responseMessage.ExternalPort
+                        , responseMessage.LeaseDuration
+                        , responseMessage.PortMappingDescription);
 
                     mappings.Add(mapping);
                     index++;
@@ -74,12 +76,14 @@ namespace Mono.Nat
         {
             try
             {
-                var message = new GetSpecificPortMappingEntryRequestMessage(protocol, port);
-                var messageResponse = await PerformRequestAsync<GetGenericPortMappingEntryResponseMessage>(message);
+                var message = new GetSpecificPortMappingEntryRequestMessage(protocol, port, _deviceInfo.ServiceType);
+                var messageResponse = await RequestAsync<GetGenericPortMappingEntryResponseMessage>(message);
 
-                var mapping = new Mapping(messageResponse.Protocol, messageResponse.InternalPort, messageResponse.ExternalPort, messageResponse.LeaseDuration);
-                mapping.Description = messageResponse.PortMappingDescription;
-                return mapping;
+                return new Mapping(messageResponse.Protocol
+                    , messageResponse.InternalPort
+                    , messageResponse.ExternalPort
+                    , messageResponse.LeaseDuration
+                    , messageResponse.PortMappingDescription);
             }
             catch (MappingException e)
             {
@@ -110,25 +114,10 @@ namespace Mono.Nat
         }
 
 
-        private byte[] Envelop(RequestMessageBase requestMessage)
-        {
-            string bodyString = "<s:Envelope "
-                                + "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
-                                + "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
-                                + "<s:Body>"
-                                + "<u:" + requestMessage.Action + " "
-                                + "xmlns:u=\"" + _deviceInfo.ServiceType + "\">"
-                                + requestMessage.GetBody()
-                                + "</u:" + requestMessage.Action + ">"
-                                + "</s:Body>"
-                                + "</s:Envelope>\r\n\r\n";
 
-            return Encoding.UTF8.GetBytes(bodyString);
-        }
-
-        private async Task<T> PerformRequestAsync<T>(RequestMessageBase requestMessage) where T: ResponseMessageBase
+        private async Task<T> RequestAsync<T>(RequestMessageBase requestMessage) where T: ResponseMessageBase
         {
-            var messageBody = Envelop(requestMessage);
+            var messageBody = requestMessage.Envelop();
             var request = BuildRequestServiceControl(requestMessage.Action);
 
             request.ContentLength = messageBody.Length;
@@ -169,24 +158,22 @@ namespace Mono.Nat
         private T DecodeMessageFromResponse<T>(Stream s, long length) where T: ResponseMessageBase
         {
             var data = new StringBuilder();
-            int bytesRead;
-            var totalBytesRead = 0;
-            var buffer = new byte[10240];
 
-            // Read out the content of the message, hopefully picking everything up in the case where we have no contentlength
+            // Read out the content of the message, hopefully picking 
+            // everything up in the case where we have no contentlength
             if (length != -1)
             {
-                while (totalBytesRead < length)
+                int bytesRead;
+                var buffer = new byte[length];
+                for (var i = 0; i < length; i += bytesRead)
                 {
                     bytesRead = s.Read(buffer, 0, buffer.Length);
                     data.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
-                    totalBytesRead += bytesRead;
                 }
             }
             else
             {
-                while ((bytesRead = s.Read(buffer, 0, buffer.Length)) != 0)
-                    data.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+                data.Append(Encoding.UTF8.GetString(s.ReadToEnd()));
             }
 
             // Once we have our content, we need to see what kind of message it is. It'll either a an error
@@ -241,12 +228,7 @@ namespace Mono.Nat
 
             try
             {
-                var abortCount = 0;
-                var buffer = new byte[10240];
-                var servicesXml = new StringBuilder();
-                var xmldoc = new XmlDocument();
                 var httpresponse = response as HttpWebResponse;
-                var s = response.GetResponseStream();
 
                 if (httpresponse != null && httpresponse.StatusCode != HttpStatusCode.OK)
                 {
@@ -254,31 +236,7 @@ namespace Mono.Nat
                     return; // FIXME: This the best thing to do??
                 }
 
-                while (true)
-                {
-                    var bytesRead = s.Read(buffer, 0, buffer.Length);
-                    servicesXml.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
-                    try
-                    {
-                        xmldoc.LoadXml(servicesXml.ToString());
-                        response.Close();
-                        break;
-                    }
-                    catch (XmlException)
-                    {
-                        // If we can't receive the entire XML within 500ms, then drop the connection
-                        // Unfortunately not all routers supply a valid ContentLength (mine doesn't)
-                        // so this hack is needed to keep testing our recieved data until it gets successfully
-                        // parsed by the xmldoc. Without this, the code will never pick up my router.
-                        if (abortCount++ > 50)
-                        {
-                            response.Close();
-                            return;
-                        }
-                        NatUtility.Log("{0}: Couldn't parse services list", _deviceInfo.HostEndPoint);
-                        System.Threading.Thread.Sleep(10);
-                    }
-                }
+                var xmldoc = ReadXmlResponse(response);
 
                 NatUtility.Log("{0}: Parsed services list", _deviceInfo.HostEndPoint);
                 var ns = new XmlNamespaceManager(xmldoc.NameTable);
@@ -318,14 +276,22 @@ namespace Mono.Nat
                 // Just drop the connection, FIXME: Should i retry?
                 NatUtility.Log("{0}: Device denied the connection attempt: {1}", _deviceInfo.HostEndPoint, ex);
             }
-            catch(Exception e)
-            {
-                NatUtility.Log(e.ToString());
-            }
             finally
             {
                 if (response != null)
                     response.Close();
+            }
+        }
+
+        private XmlDocument ReadXmlResponse(WebResponse response)
+        {
+            using(var stream = response.GetResponseStream())
+            {
+                var responseBody = stream.ReadToEnd();
+                var servicesXml = Encoding.UTF8.GetString(responseBody);
+                var xmldoc = new XmlDocument();
+                xmldoc.LoadXml(servicesXml);
+                return xmldoc;
             }
         }
     }

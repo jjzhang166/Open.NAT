@@ -35,7 +35,8 @@ namespace Mono.Nat
         private readonly IPAddress _localIpAddress;
         private readonly Mapping _mapping;
 
-        public CreatePortMappingRequestMessage(Mapping mapping, IPAddress localIpAddress)
+        public CreatePortMappingRequestMessage(Mapping mapping, IPAddress localIpAddress, string serviceType) 
+            : base(serviceType)
         {
             _mapping = mapping;
             _localIpAddress = localIpAddress;
@@ -46,7 +47,7 @@ namespace Mono.Nat
             get { return "AddPortMapping"; }
         }
 
-        public override string GetBody()
+        public override string ToXml()
         {
             var builder = new StringBuilder(256);
             using(var writer = CreateWriter(builder))

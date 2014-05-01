@@ -24,7 +24,7 @@ namespace Mono.Nat
 
             try
             {
-                foreach (NetworkInterface n in NetworkInterface.GetAllNetworkInterfaces())
+                foreach (var n in NetworkInterface.GetAllNetworkInterfaces())
                 {
                     if (n.OperationalStatus != OperationalStatus.Up && n.OperationalStatus != OperationalStatus.Unknown)
                         continue;
@@ -69,7 +69,8 @@ namespace Mono.Nat
                                     continue; // Move on to the next address.
                                 }
 
-                                _gatewayLists.Add(client, gatewayList); Sockets.Add(client);
+                                _gatewayLists.Add(client, gatewayList); 
+                                Sockets.Add(client);
                             }
                         }
                     }
@@ -83,6 +84,8 @@ namespace Mono.Nat
 
 		protected override void Search (UdpClient client)
         {
+            if (!IsSearchTime) return;
+
             // Sort out the time for the next search first. The spec says the 
             // timeout should double after each attempt. Once it reaches 64 seconds
             // (and that attempt fails), assume no devices available
@@ -105,8 +108,8 @@ namespace Mono.Nat
 
         private static bool IsSearchAddress(IPAddress address)
         {
-            foreach (List<IPEndPoint> gatewayList in _gatewayLists.Values)
-                foreach (IPEndPoint gatewayEndpoint in gatewayList)
+            foreach (var gatewayList in _gatewayLists.Values)
+                foreach (var gatewayEndpoint in gatewayList)
                     if (gatewayEndpoint.Address.Equals(address))
                         return true;
             return false;
@@ -114,20 +117,19 @@ namespace Mono.Nat
 
         public override void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
         {
-            if (!IsSearchAddress(endpoint.Address))
+            if (!IsSearchAddress(endpoint.Address)
+                || response.Length != 12 
+                || response[0] != PmpConstants.Version
+                || response[1] != PmpConstants.ServerNoop)
                 return;
-            if (response.Length != 12)
-                return;
-            if (response[0] != PmpConstants.Version)
-                return;
-            if (response[1] != PmpConstants.ServerNoop)
-                return;
+
             int errorcode = IPAddress.NetworkToHostOrder(BitConverter.ToInt16(response, 2));
             if (errorcode != 0)
                 NatUtility.Log("Non zero error: {0}", errorcode);
 
             var publicIp = new IPAddress(new[] { response[8], response[9], response[10], response[11] });
             NextSearch = DateTime.Now.AddMinutes(5);
+
             _timeout = 250;
             OnDeviceFound(new DeviceEventArgs(new PmpNatDevice(endpoint.Address, publicIp)));
         }

@@ -28,12 +28,17 @@ namespace Mono.Nat
 {
     internal class GetExternalIPAddressRequestMessage : RequestMessageBase
     {
+        public GetExternalIPAddressRequestMessage(string serviceType) 
+            : base(serviceType)
+        {
+        }
+
         public override string Action
         {
             get { return "GetExternalIPAddress"; }
         }
 
-        public override string GetBody()
+        public override string ToXml()
         {
             return string.Empty;
         }

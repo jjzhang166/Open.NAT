@@ -10,6 +10,5 @@ namespace Mono.Nat
         void Search();
         void Receive();
         void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
-        DateTime NextSearch { get; }
     }
 }

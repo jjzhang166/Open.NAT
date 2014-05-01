@@ -33,7 +33,8 @@ namespace Mono.Nat
 	{
 		private readonly Mapping _mapping;
 
-		public DeletePortMappingRequestMessage(Mapping mapping)
+		public DeletePortMappingRequestMessage(Mapping mapping, string serviceType)
+            : base(serviceType)
 		{
 			_mapping = mapping;
 		}
@@ -43,7 +44,7 @@ namespace Mono.Nat
 	        get { return "DeletePortMapping"; }
 	    }
 
-	    public override string GetBody()
+	    public override string ToXml()
 		{
 			var builder = new StringBuilder(256);
 			using(var writer = CreateWriter(builder))

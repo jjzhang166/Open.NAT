@@ -35,11 +35,11 @@ namespace Mono.Nat
 {
 	public static class NatUtility
 	{
-        private static readonly ManualResetEvent Searching;
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
         public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
 
-	    private static readonly List<ISearcher> Searchers;
+        private static readonly ManualResetEvent Searching;
+        private static readonly List<ISearcher> Searchers;
 
 	    public static TextWriter Logger { get; set; }
 	    public static bool Verbose { get; set; }
@@ -74,7 +74,7 @@ namespace Mono.Nat
                         searcher.Receive();
                     }
 
-                    foreach (var searcher in Searchers.Where(s => s.NextSearch < DateTime.Now))
+                    foreach (var searcher in Searchers)
                     {
                         searcher.Search();
                     }

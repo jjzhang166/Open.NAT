@@ -26,8 +26,6 @@
 
 using System;
 using System.Threading;
-using Mono.Nat.Enums;
-using Mono.Nat.EventArgs;
 
 namespace Mono.Nat.ConsoleTest
 {
