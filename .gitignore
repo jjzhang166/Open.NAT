@@ -15,8 +15,10 @@ Makefile.in
 
 src/Mono.Nat/bin
 src/Mono.Nat/obj
-src/Mono.Nat.Test/bin
-src/Mono.Nat.Test/obj
+src/Mono.Nat.Tests/bin
+src/Mono.Nat.Tests/obj
+src/Mono.Nat.ConsoleTest/bin
+src/Mono.Nat.ConsoleTest/obj
 
 # Ignore the pc file
 src/Mono.Nat/mono.nat.pc
