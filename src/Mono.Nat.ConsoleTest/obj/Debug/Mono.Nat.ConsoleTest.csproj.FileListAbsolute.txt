@@ -1,9 +1,0 @@
-C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.Test\bin\Debug\Mono.Nat.ConsoleTest.exe.config
-C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.ConsoleTest\bin\Debug\Mono.Nat.ConsoleTest.exe.config
-C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.ConsoleTest\bin\Debug\Mono.Nat.ConsoleTest.exe
-C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.ConsoleTest\bin\Debug\Mono.Nat.ConsoleTest.pdb
-C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.ConsoleTest\bin\Debug\Mono.Nat.dll
-C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.ConsoleTest\bin\Debug\Mono.Nat.pdb
-C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.ConsoleTest\obj\Debug\Mono.Nat.ConsoleTest.csprojResolveAssemblyReference.cache
-C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.ConsoleTest\obj\Debug\Mono.Nat.ConsoleTest.exe
-C:\Users\lucas.ontivero\Documents\Visual Studio 2010\Projects\Mono.Nat\src\Mono.Nat.ConsoleTest\obj\Debug\Mono.Nat.ConsoleTest.pdb
