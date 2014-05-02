@@ -30,6 +30,8 @@ namespace Mono.Nat
 {
     interface IIPAddressesProvider
     {
-        IEnumerable<IPAddress> GetIPAddresses();
+        IEnumerable<IPAddress> DnsAddresses();
+        IEnumerable<IPAddress> GatewayAddresses();
+        IEnumerable<IPAddress> UnicastAddresses();
     }
 }

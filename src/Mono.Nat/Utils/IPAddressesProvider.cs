@@ -23,6 +23,8 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -33,14 +35,31 @@ namespace Mono.Nat
 {
     public class IPAddressesProvider : IIPAddressesProvider
     {
-        public IEnumerable<IPAddress> GetIPAddresses()
+        private IEnumerable<IPAddress> IPAddresses(Func<IPInterfaceProperties, IEnumerable<IPAddress>> ipExtractor  )
         {
             return from networkInterface in NetworkInterface.GetAllNetworkInterfaces()
-                      where networkInterface.OperationalStatus == OperationalStatus.Up || networkInterface.OperationalStatus == OperationalStatus.Unknown
-                      from addressInfo in networkInterface.GetIPProperties().UnicastAddresses
-                      where addressInfo.Address.AddressFamily == AddressFamily.InterNetwork
-                      select addressInfo.Address;
+                   where
+                       networkInterface.OperationalStatus == OperationalStatus.Up ||
+                       networkInterface.OperationalStatus == OperationalStatus.Unknown
+                   let properties = networkInterface.GetIPProperties()
+                   from address in ipExtractor(properties)
+                   where address.AddressFamily == AddressFamily.InterNetwork
+                   select address;
+        }
 
+        public IEnumerable<IPAddress> UnicastAddresses()
+        {
+            return IPAddresses(p => p.UnicastAddresses.Select(x=>x.Address));
+        }
+
+        public IEnumerable<IPAddress> DnsAddresses()
+        {
+            return IPAddresses(p => p.DnsAddresses);
+        }
+
+        public IEnumerable<IPAddress> GatewayAddresses()
+        {
+            return IPAddresses(p => p.GatewayAddresses.Select(x=>x.Address)); 
         }
     }
 }

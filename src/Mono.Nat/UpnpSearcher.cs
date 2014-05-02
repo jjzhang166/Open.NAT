@@ -55,7 +55,7 @@ namespace Mono.Nat
 			var clients = new List<UdpClient>();
 			try
 			{
-                var ips = _ipprovider.GetIPAddresses();
+                var ips = _ipprovider.UnicastAddresses();
 
                 foreach (var ipAddress in ips)
 				{
