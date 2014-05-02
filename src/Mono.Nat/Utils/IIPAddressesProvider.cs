@@ -28,7 +28,7 @@ using System.Net;
 
 namespace Mono.Nat
 {
-    interface IIPAddressesProvider
+    internal interface IIPAddressesProvider
     {
         IEnumerable<IPAddress> DnsAddresses();
         IEnumerable<IPAddress> GatewayAddresses();

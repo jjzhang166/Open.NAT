@@ -33,7 +33,7 @@ using System.Net.Sockets;
 
 namespace Mono.Nat
 {
-    public class IPAddressesProvider : IIPAddressesProvider
+    internal class IPAddressesProvider : IIPAddressesProvider
     {
         private IEnumerable<IPAddress> IPAddresses(Func<IPInterfaceProperties, IEnumerable<IPAddress>> ipExtractor  )
         {

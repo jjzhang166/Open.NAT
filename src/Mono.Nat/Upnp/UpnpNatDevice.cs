@@ -85,7 +85,7 @@ namespace Mono.Nat
         } 
     }
 
-	public sealed class UpnpNatDevice : NatDevice, IEquatable<UpnpNatDevice>
+	internal sealed class UpnpNatDevice : NatDevice, IEquatable<UpnpNatDevice>
 	{
 	    internal readonly UpnpNatDeviceInfo DeviceInfo;
         private readonly UpnpServiceProxy _proxy;
