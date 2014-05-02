@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Mono.Nat")]
-[assembly: AssemblyCopyright("Copyright Alan McGovern, Ben Motmans ©  2006-2007")]
+[assembly: AssemblyCopyright("Copyright Alan McGovern, Ben Motmans, Lucas Ontivero ©  2006-2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]

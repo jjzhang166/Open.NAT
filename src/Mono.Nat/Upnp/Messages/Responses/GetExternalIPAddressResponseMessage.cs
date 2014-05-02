@@ -1,8 +1,10 @@
 //
 // Authors:
-//   Alan McGovern alan.mcgovern@gmail.com
+//   Alan McGovern  alan.mcgovern@gmail.com
+//   Lucas Ontivero lucas.ontivero@gmail.com
 //
 // Copyright (C) 2006 Alan McGovern
+// Copyright (C) 2014 Lucas Ontivero
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
