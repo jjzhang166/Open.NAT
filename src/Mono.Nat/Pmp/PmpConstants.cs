@@ -32,7 +32,7 @@ namespace Mono.Nat
 	{
 		public const byte Version = 0;
 		
-		public const byte OperationCode = 0;
+		public const byte OperationExternalAddressRequest = 0;
 		public const byte OperationCodeUdp = 1;
 		public const byte OperationCodeTcp = 2;
         public const byte ServerNoop = 128;

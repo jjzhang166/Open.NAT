@@ -52,6 +52,8 @@ namespace Mono.Nat
 
         public void Search()
         {
+            if (!IsSearchTime) return;
+
             NatUtility.Log("Searching for: {0}", GetType().Name);
 
             foreach (var socket in Sockets)

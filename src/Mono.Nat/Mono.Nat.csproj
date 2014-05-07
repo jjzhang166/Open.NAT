@@ -74,6 +74,7 @@
     <Compile Include="Upnp\Messages\Responses\GetExternalIPAddressResponseMessage.cs" />
     <Compile Include="Upnp\Messages\Responses\GetGenericPortMappingEntryResponseMessage.cs" />
     <Compile Include="Upnp\Messages\UpnpMessage.cs" />
+    <Compile Include="Upnp\UpnpNatDeviceInfo.cs" />
     <Compile Include="Upnp\UpnpServiceProxy.cs" />
     <Compile Include="Upnp\UpnpNatDevice.cs" />
     <Compile Include="Utils\Extensions.cs" />

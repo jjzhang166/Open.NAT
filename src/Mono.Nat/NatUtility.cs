@@ -41,7 +41,11 @@ namespace Mono.Nat
         public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
 
         private static readonly ManualResetEvent Searching;
-        private static readonly List<ISearcher> Searchers;
+        internal static List<ISearcher> Searchers = new List<ISearcher>
+        {
+            new UpnpSearcher(new IPAddressesProvider()), 
+            new PmpSearcher(new IPAddressesProvider())
+        };
 
 	    public static TextWriter Logger { get; set; }
 	    public static bool Verbose { get; set; }
@@ -49,12 +53,10 @@ namespace Mono.Nat
 	    static NatUtility()
         {
             Searching = new ManualResetEvent(false);
+        }
 
-            Searchers = new List<ISearcher>{
-                new UpnpSearcher(new IPAddressesProvider())//, 
-                //PmpSearcher.Instance
-            };
-
+        public static void Initialize()
+        {
             foreach (var searcher in Searchers)
             {
                 searcher.DeviceFound += OnDeviceFound;

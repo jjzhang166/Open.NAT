@@ -109,8 +109,6 @@ namespace Mono.Nat
 
 		protected override void Search (UdpClient client)
         {
-            if (!IsSearchTime) return;
-
             // Sort out the time for the next search first. The spec says the 
             // timeout should double after each attempt. Once it reaches 64 seconds
             // (and that attempt fails), assume no devices available
@@ -126,7 +124,7 @@ namespace Mono.Nat
             }
 
             // The nat-pmp search message. Must be sent to GatewayIP:53531
-            var buffer = new[] { PmpConstants.Version, PmpConstants.OperationCode };
+            var buffer = new[] { PmpConstants.Version, PmpConstants.OperationExternalAddressRequest };
             foreach (var gatewayEndpoint in _gatewayLists[client])
                 client.Send(buffer, buffer.Length, gatewayEndpoint);
         }

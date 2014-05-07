@@ -70,8 +70,7 @@ namespace Mono.Nat
 
 		public override Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int port)
 		{
-			//NAT-PMP does not specify a way to get a specific port map
-			throw new NotSupportedException ();
+            throw new NotSupportedException("NAT-PMP does not specify a way to get a specific port map");
 		}
 		
 

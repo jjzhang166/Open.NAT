@@ -48,6 +48,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="UpnpMockServer.cs" />
     <Compile Include="UpnpSearcherFixture.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -55,6 +56,9 @@
       <Project>{F5D74163-145F-47BF-83DC-D0E07249C6CA}</Project>
       <Name>Mono.Nat</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Responses\ServiceList.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -78,12 +78,10 @@ namespace Mono.Nat
 
         protected override void Search(UdpClient client)
         {
-            if(!IsSearchTime) return;
-
             NextSearch = DateTime.Now.AddMinutes(5);
 
             var data = DiscoverDeviceMessage.Encode();
-            var searchEndpoint = new IPEndPoint(WellKnownConstants.IPv4MulticastAddress, 1900);
+            var searchEndpoint = new IPEndPoint(IPAddress.Broadcast, 1900);
 
             // UDP is unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
             for (var i = 0; i < 3; i++)

@@ -60,8 +60,7 @@ namespace Mono.Nat
                 WriteFullElement(writer, "NewInternalPort", _mapping.PrivatePort.ToString(CultureInfo.InvariantCulture));
                 WriteFullElement(writer, "NewInternalClient", _localIpAddress.ToString());
                 WriteFullElement(writer, "NewEnabled", "1");
-                WriteFullElement(writer, "NewPortMappingDescription",
-                                 string.IsNullOrEmpty(_mapping.Description) ? "Mono.Nat" : _mapping.Description);
+                WriteFullElement(writer, "NewPortMappingDescription", _mapping.Description);
                 WriteFullElement(writer, "NewLeaseDuration", _mapping.Lifetime.ToString(CultureInfo.InvariantCulture));
 
                 writer.Flush();

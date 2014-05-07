@@ -124,7 +124,7 @@ namespace Mono.Nat
         {
             NatUtility.Log("Initiating request to: {0}", _deviceInfo.ServiceControlUri);
 
-            var request = (HttpWebRequest)WebRequest.Create(_deviceInfo.ServiceControlUri);
+            var request = WebRequest.CreateHttp(_deviceInfo.ServiceControlUri);
             request.KeepAlive = false;
             request.Method = "POST";
             request.ContentType = "text/xml; charset=\"utf-8\"";
@@ -135,7 +135,7 @@ namespace Mono.Nat
 
         private WebRequest BuildRequestServiceDescription()
         {
-            var request = (HttpWebRequest)WebRequest.Create(_deviceInfo.ServiceDescriptionUri);
+            var request = WebRequest.CreateHttp(_deviceInfo.ServiceDescriptionUri);
             request.Headers.Add("ACCEPT-LANGUAGE", "en");
             request.Method = "GET";
             return request;
@@ -172,9 +172,9 @@ namespace Mono.Nat
                     if (response == null)
                         throw;
                 }
-                if (response == null) return null;
-
-                return DecodeMessageFromResponse<T>(response.GetResponseStream(), response.ContentLength);
+                return response != null 
+                    ? DecodeMessageFromResponse<T>(response.GetResponseStream(), response.ContentLength)
+                    : null;
             }
             finally
             {
@@ -251,11 +251,12 @@ namespace Mono.Nat
 
         public async Task GetServicesListAsync()
         {
-            var request = BuildRequestServiceDescription();
-            var response = await request.GetResponseAsync();
-
+            WebResponse response = null;
             try
             {
+                var request = BuildRequestServiceDescription();
+                response = await request.GetResponseAsync();
+
                 var httpresponse = response as HttpWebResponse;
 
                 if (httpresponse != null && httpresponse.StatusCode != HttpStatusCode.OK)

@@ -41,7 +41,7 @@ namespace Mono.Nat.ConsoleTest
 		    NatUtility.Logger = Console.Out ;
 		    NatUtility.Verbose = true;
 			NatUtility.DeviceFound += DeviceFound;
-			
+			NatUtility.Initialize();
 			NatUtility.StartDiscovery ();
 			
 			Console.WriteLine ("Discovery started");
@@ -55,56 +55,24 @@ namespace Mono.Nat.ConsoleTest
 		
 		private async void DeviceFound (object sender, DeviceEventArgs args)
         {
-            try
-            {
-			    var device = args.Device;
+			var device = args.Device;
     			
-			    Console.ForegroundColor = ConsoleColor.Red;
-			    Console.WriteLine ("Device found");
-			    Console.ResetColor();
-			    Console.WriteLine ("Type: {0}", device.GetType().Name);
+			Console.ForegroundColor = ConsoleColor.Green;
+			Console.WriteLine ("Device found");
+			Console.WriteLine ("Type: {0}", device.GetType().Name);
 
-                var ip = await device.GetExternalIPAsync();
+            var ip = await device.GetExternalIPAsync();
 
-			    Console.WriteLine ("IP: {0}", ip);
-                await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700));
-			    Console.WriteLine ("Maped");
+			Console.WriteLine ("IP: {0}", ip);
+            await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700));
+			Console.WriteLine ("Maped");
 
-                var mappings =  await device.GetAllMappingsAsync();
-                foreach (var mapping in mappings)
-                {
-                    Console.WriteLine(mapping.ToString());
-                }
-			
-				return;
-                /*
-                    Mapping mapping = new Mapping(Protocol.Tcp, 6001, 6001);
-                    device.CreatePortMap(mapping);
-                    Console.WriteLine("Create Mapping: protocol={0}, public={1}, private={2}", mapping.Protocol, mapping.PublicPort, mapping.PrivatePort);
-
-                    try
-                    {
-                        Mapping m = device.GetSpecificMapping(Protocol.Tcp, 6001);
-                        Console.WriteLine("Specific Mapping: protocol={0}, public={1}, private={2}", m.Protocol, m.PublicPort, m.PrivatePort);
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Couldnt get specific mapping");
-                    }
-                    foreach (Mapping mp in device.GetAllMappings())
-                    {
-                        Console.WriteLine("Existing Mapping: protocol={0}, public={1}, private={2}", mp.Protocol, mp.PublicPort, mp.PrivatePort);
-                        device.DeletePortMap(mp);
-                    }
-
-                    Console.WriteLine("External IP: {0}", device.GetExternalIP());
-                    Console.WriteLine("Done...");
-                 */
-
-            } catch (Exception ex) {
-				Console.WriteLine (ex.Message);
-				Console.WriteLine (ex.StackTrace);
-			}
-		}
+            var mappings =  await device.GetAllMappingsAsync();
+            foreach (var mapping in mappings)
+            {
+                Console.WriteLine(mapping.ToString());
+            }
+            Console.ResetColor();
+        }
 	}
 }

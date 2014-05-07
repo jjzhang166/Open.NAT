@@ -39,7 +39,7 @@ namespace Mono.Nat
                 {
                     ts.Write(buffer, 0, bytesRead);
                 }
-                return ts.GetBuffer();
+                return ts.ToArray();
             }
         }
     }
