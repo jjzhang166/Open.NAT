@@ -1,6 +1,6 @@
 #! /bin/sh
 
-PROJECT=Mono.Nat
+PROJECT=Open.Nat
 FILE=
 CONFIGURE=configure.ac
 

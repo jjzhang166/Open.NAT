@@ -13,15 +13,15 @@ Makefile.in
 *.userprefs
 *.pidb
 
-src/Mono.Nat/bin
-src/Mono.Nat/obj
-src/Mono.Nat.Tests/bin
-src/Mono.Nat.Tests/obj
-src/Mono.Nat.ConsoleTest/bin
-src/Mono.Nat.ConsoleTest/obj
+src/Open.Nat/bin
+src/Open.Nat/obj
+src/Open.Nat.Tests/bin
+src/Open.Nat.Tests/obj
+src/Open.Nat.ConsoleTest/bin
+src/Open.Nat.ConsoleTest/obj
 
 # Ignore the pc file
-src/Mono.Nat/mono.nat.pc
+src/Open.Nat/mono.nat.pc
 
 # Ignore debug foo
 xdb.il
@@ -32,4 +32,4 @@ xdb.s
 *.suo
 
 #ignore Resharper folders
-src/_ReSharper.Mono.Nat
+src/_ReSharper.Open.Nat

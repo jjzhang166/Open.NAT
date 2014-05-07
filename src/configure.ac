@@ -1,7 +1,7 @@
 dnl Warning: This is an automatically generated file, do not edit!
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.54])
-AC_INIT([Mono.Nat], [1.1.0])
+AC_INIT([Open.Nat], [1.1.0])
 AM_INIT_AUTOMAKE([foreign])
 
 dnl pkg-config
@@ -51,8 +51,8 @@ dnl package checks, per config
 
 AC_CONFIG_FILES([
 Makefile
-Mono.Nat/Makefile
-Mono.Nat/mono.nat.pc
+Open.Nat/Makefile
+Open.Nat/Open.nat.pc
 
 ])
 
