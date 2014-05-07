@@ -3,8 +3,8 @@
 *.pidb
 *.swp
 
-/bin
-/obj
+*/bin
+*/obj
 /packages
 
 # Ignore VS files
