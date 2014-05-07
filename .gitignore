@@ -3,17 +3,13 @@
 *.pidb
 *.swp
 
-src/Open.Nat/bin
-src/Open.Nat/obj
-src/Open.Nat.Tests/bin
-src/Open.Nat.Tests/obj
-src/Open.Nat.ConsoleTest/bin
-src/Open.Nat.ConsoleTest/obj
-src/packages
+/bin
+/obj
+/packages
 
 # Ignore VS files
 *.user
 *.suo
 
 #ignore Resharper folders
-src/_ReSharper.Open.Nat
+/_ReSharper.Open.Nat
