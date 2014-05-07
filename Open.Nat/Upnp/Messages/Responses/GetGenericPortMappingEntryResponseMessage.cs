@@ -67,8 +67,7 @@ namespace Open.Nat
         public static string GetXmlElementText(this XmlNode node, string elementName)
         {
             var element = node[elementName];
-            Debug.Assert(element != null, "element '" + elementName + "' != null");
-            return element.InnerText;
+            return element != null ? element.InnerText : string.Empty;
         }
     }
 }
