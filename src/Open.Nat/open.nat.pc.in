@@ -1,7 +1,0 @@
-Name: Open.Nat
-Description: Open.Nat
-Version: @VERSION@
-
-Requires: 
-Libs: -r:@expanded_libdir@/@PACKAGE@/Open.Nat.dll
-Libraries=@expanded_libdir@/@PACKAGE@/Open.Nat.dll

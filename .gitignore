@@ -1,17 +1,7 @@
-# Ignore makefile foo
-src/aclocal.m4
-src/autom4te.cache/
-src/config.log
-src/config.status
-src/configure
-src/install-sh
-src/missing
-Makefile
-Makefile.in
-
 # Ignore monodevelop generated files and directories
 *.userprefs
 *.pidb
+*.swp
 
 src/Open.Nat/bin
 src/Open.Nat/obj
@@ -20,13 +10,6 @@ src/Open.Nat.Tests/obj
 src/Open.Nat.ConsoleTest/bin
 src/Open.Nat.ConsoleTest/obj
 src/packages
-
-# Ignore the pc file
-src/Open.Nat/mono.nat.pc
-
-# Ignore debug foo
-xdb.il
-xdb.s
 
 # Ignore VS files
 *.user
