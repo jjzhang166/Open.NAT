@@ -6,37 +6,37 @@ EXTRA_DIST =
 if ENABLE_DEBUG
 ASSEMBLY_COMPILER_COMMAND = gmcs
 ASSEMBLY_COMPILER_FLAGS =  -noconfig -codepage:utf8 -warn:4 -optimize- -debug "-define:DEBUG;TRACE"
-ASSEMBLY = bin/Debug/Mono.Nat.dll
+ASSEMBLY = bin/Debug/Open.Nat.dll
 ASSEMBLY_MDB = $(ASSEMBLY).mdb
 COMPILE_TARGET = library
 PROJECT_REFERENCES = 
 BUILD_DIR = bin/Debug/
 
-MONO_NAT_DLL_MDB_SOURCE=bin/Debug/Mono.Nat.dll.mdb
+OPEN_NAT_DLL_MDB_SOURCE=bin/Debug/Open.Nat.dll.mdb
 
 endif
 
 if ENABLE_RELEASE
 ASSEMBLY_COMPILER_COMMAND = gmcs
 ASSEMBLY_COMPILER_FLAGS =  -noconfig -codepage:utf8 -warn:4 -optimize+ -debug -define:DEBUG "-define:TRACE"
-ASSEMBLY = bin/Release/Mono.Nat.dll
+ASSEMBLY = bin/Release/Open.Nat.dll
 ASSEMBLY_MDB = $(ASSEMBLY).mdb
 COMPILE_TARGET = library
 PROJECT_REFERENCES = 
 BUILD_DIR = bin/Release/
 
-MONO_NAT_DLL_MDB_SOURCE=bin/Release/Mono.Nat.dll.mdb
+OPEN_NAT_DLL_MDB_SOURCE=bin/Release/Open.Nat.dll.mdb
 
 endif
 
 AL=al2
-SATELLITE_ASSEMBLY_NAME=Mono.Nat.resources.dll
+SATELLITE_ASSEMBLY_NAME=Open.Nat.resources.dll
 
 PROGRAMFILES = \
-	$(MONO_NAT_DLL_MDB)  
+	$(OPEN_NAT_DLL_MDB)  
 
 LINUX_PKGCONFIG = \
-	$(MONO_NAT_PC)  
+	$(OPEN_NAT_PC)  
 
 
 RESGEN=resgen2
@@ -82,7 +82,7 @@ DATA_FILES =
 RESOURCES = 
 
 EXTRAS = \
-	mono.nat.pc.in 
+	open.nat.pc.in 
 
 REFERENCES =  \
 	System \
@@ -95,10 +95,10 @@ CLEANFILES = $(PROGRAMFILES) $(LINUX_PKGCONFIG)
 
 include $(top_srcdir)/Makefile.include
 
-MONO_NAT_DLL_MDB = $(BUILD_DIR)/Mono.Nat.dll.mdb
-MONO_NAT_PC = $(BUILD_DIR)/mono.nat.pc
+OPEN_NAT_DLL_MDB = $(BUILD_DIR)/Open.Nat.dll.mdb
+OPEN_NAT_PC = $(BUILD_DIR)/open.nat.pc
 
-$(eval $(call emit-deploy-wrapper,MONO_NAT_PC,mono.nat.pc))
+$(eval $(call emit-deploy-wrapper,OPEN_NAT_PC,open.nat.pc))
 
 
 $(eval $(call emit_resgen_targets))

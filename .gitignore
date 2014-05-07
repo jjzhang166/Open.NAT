@@ -19,6 +19,7 @@ src/Open.Nat.Tests/bin
 src/Open.Nat.Tests/obj
 src/Open.Nat.ConsoleTest/bin
 src/Open.Nat.ConsoleTest/obj
+src/packages
 
 # Ignore the pc file
 src/Open.Nat/mono.nat.pc
