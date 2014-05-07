@@ -82,6 +82,9 @@
     <Compile Include="Utils\IPAddressesProvider.cs" />
     <Compile Include="Utils\WellKnownConstants.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Open.Nat.nuspec" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
   <ProjectExtensions>
     <VisualStudio AllowExistingFolder="true" />

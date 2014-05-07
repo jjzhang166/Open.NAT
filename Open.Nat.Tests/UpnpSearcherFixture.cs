@@ -18,17 +18,11 @@ namespace Open.Nat.Tests
         {
             get
             {
-                yield return new TestCaseData(File.ReadAllText("..\\..\\Responses\\ServiceList.txt"), Evaluator.True);
-                yield return new TestCaseData("500", Evaluator.False);
+                yield return new TestCaseData(File.ReadAllText("..\\..\\Responses\\ServiceList.txt"), true);
+                yield return new TestCaseData("500", false);
             }
         }
 
-        class Evaluator
-        {
-            public Func<UpnpNatDeviceInfo, bool> Exp;
-            public static Evaluator True { get { return new Evaluator{Exp = (d)=> true };}}
-            public static Evaluator False { get { return new Evaluator { Exp = (d) => false }; } }
-        }
 
         [TestFixtureSetUp]
         public void SetUp()
@@ -39,7 +33,7 @@ namespace Open.Nat.Tests
         }
 
         [Test, TestCaseSource(typeof(UpnpSearcherFixture), "EndpointExpectations")]
-        public void TestIt(string response, Func<NatDevice, bool> expected)
+        public void TestIt(string response, bool shouldFound)
         {
             var found = false;
             using(var upnpServer = new UpnpMockServer(response))
@@ -51,7 +45,7 @@ namespace Open.Nat.Tests
                 NatUtility.Initialize();
                 NatUtility.StartDiscovery();
                 Thread.Sleep(500);
-                Assert.IsTrue(found);
+                Assert.AreEqual(shouldFound, found);
             }
         }
     }

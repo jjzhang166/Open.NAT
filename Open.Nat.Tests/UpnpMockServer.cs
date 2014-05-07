@@ -92,7 +92,6 @@ namespace Open.Nat.Tests
 
         public void Dispose()
         {
-            _listener.Stop();
             _listener.Close();
             _udpClient.Close();
         }
