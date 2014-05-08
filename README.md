@@ -35,4 +35,7 @@ Build Status
 
 [![Build status](https://ci.appveyor.com/api/projects/status/dadcbt26mrlri8cg)](https://ci.appveyor.com/project/lontivero/open-nat)
 
+[![NuGet version](https://badge.fury.io/nu/open.nat.png)](http://badge.fury.io/nu/open.nat)
+
+
 Note that Open.Nat is still very much work in progress. 
