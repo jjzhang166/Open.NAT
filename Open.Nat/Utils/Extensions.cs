@@ -23,6 +23,8 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
+
+using System;
 using System.IO;
 using System.Xml;
 
@@ -30,17 +32,22 @@ namespace Open.Nat
 {
     static class StreamExtensions
     {
-        public static string ReadAsMany(this StreamReader stream, int bytesToRead)
+        internal static string ReadAsMany(this StreamReader stream, int bytesToRead)
         {
             var buffer = new char[bytesToRead];
             stream.ReadBlock(buffer, 0, bytesToRead);
             return new string(buffer);
         }
 
-        public static string GetXmlElementText(this XmlNode node, string elementName)
+        internal static string GetXmlElementText(this XmlNode node, string elementName)
         {
             var element = node[elementName];
             return element != null ? element.InnerText : string.Empty;
+        }
+
+        internal static bool ContainsIgnoreCase(this string s, string pattern)
+        {
+            return s.IndexOf(pattern, StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }

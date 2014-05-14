@@ -29,52 +29,78 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
 namespace Open.Nat
 {
-    internal sealed class UpnpNatDevice : NatDevice, IEquatable<UpnpNatDevice>
+    internal sealed class UpnpNatDevice : NatDevice
 	{
 	    internal readonly UpnpNatDeviceInfo DeviceInfo;
-        private readonly UpnpServiceProxy _proxy;
+        private readonly SoapClient _soapClient;
 
-		internal UpnpNatDevice (IPAddress localAddress, string deviceDetails, string serviceType)
+		internal UpnpNatDevice (UpnpNatDeviceInfo deviceInfo)
 		{
             Touch();
-
-            const string locationKey = "Location:";
-
-            var start = deviceDetails.IndexOf(locationKey, StringComparison.InvariantCultureIgnoreCase) + locationKey.Length;
-            var end = deviceDetails.IndexOf("\n", start, StringComparison.InvariantCultureIgnoreCase);
-            var locationDetails = deviceDetails.Substring(start, end - start).Trim();
-
-            DeviceInfo = new UpnpNatDeviceInfo(localAddress, locationDetails, serviceType);
-            _proxy = new UpnpServiceProxy(DeviceInfo);
+            DeviceInfo = deviceInfo;
+            DeviceInfo.UpdateInfo();
+            _soapClient = new SoapClient(DeviceInfo.ServiceControlUri, DeviceInfo.ServiceType);
 		}
-
 
 		public override async Task<IPAddress> GetExternalIPAsync()
 	    {
-	        return await _proxy.GetExternalIPAsync();
-		}
+            var message = new GetExternalIPAddressRequestMessage();
+            var responseData = await _soapClient.InvokeAsync("GetExternalIPAddress", message.ToXml());
+            var response = new GetExternalIPAddressResponseMessage(responseData, DeviceInfo.ServiceType);
+            return response.ExternalIPAddress;
+        }
 
         public override async Task CreatePortMapAsync(Mapping mapping)
 		{
-		    await _proxy.CreatePortMapAsync(mapping);
-		}
+            var message = new CreatePortMappingRequestMessage(mapping, DeviceInfo.LocalAddress);
+            await _soapClient.InvokeAsync("AddPortMapping", message.ToXml());
+        }
 
 		public override async Task DeletePortMapAsync(Mapping mapping)
 		{
-		    await _proxy.DeletePortMapAsync(mapping);
+            var message = new DeletePortMappingRequestMessage(mapping);
+            await _soapClient.InvokeAsync("DeletePortMapping", message.ToXml());
         }
 
 		public override async Task<Mapping[]> GetAllMappingsAsync()
 		{
             try
             {
-                return await _proxy.GetAllMappingsAsync();
+                var mappings = new List<Mapping>();
+                var index = 0;
+
+                while (true)
+                {
+                    try
+                    {
+                        var message = new GetGenericPortMappingEntry(index);
+
+                        var responseData = await _soapClient.InvokeAsync("GetGenericPortMappingEntry", message.ToXml());
+                        var responseMessage = new GetGenericPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, true);
+
+                        var mapping = new Mapping(responseMessage.Protocol
+                            , responseMessage.InternalPort
+                            , responseMessage.ExternalPort
+                            , responseMessage.LeaseDuration
+                            , responseMessage.PortMappingDescription);
+
+                        mappings.Add(mapping);
+                        index++;
+                    }
+                    catch (MappingException e)
+                    {
+                        if (e.ErrorCode == 713) break;
+                        throw;
+                    }
+                }
+                return mappings.ToArray();
             }
             catch (WebException ex)
             {
@@ -89,34 +115,23 @@ namespace Open.Nat
 
 		public override async Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int port)
 		{
-		    return await _proxy.GetSpecificMappingAsync(protocol, port);
-        }
+            try
+            {
+                var message = new GetSpecificPortMappingEntryRequestMessage(protocol, port);
+                var responseData = await _soapClient.InvokeAsync("GetSpecificPortMappingEntry", message.ToXml());
+                var messageResponse = new GetGenericPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, false);
 
-		public override bool Equals(object obj)
-		{
-			var device = obj as UpnpNatDevice;
-			return (device != null) && Equals(device);
-		}
-
-		public bool Equals(UpnpNatDevice other)
-		{
-			return (other != null) 
-                && (DeviceInfo.HostEndPoint.Equals(other.DeviceInfo.HostEndPoint)
-                && DeviceInfo.ServiceDescriptionPart == other.DeviceInfo.ServiceDescriptionPart);
-		}
-
-		public override int GetHashCode()
-		{
-            return (DeviceInfo.HostEndPoint.GetHashCode()
-                ^ DeviceInfo.ServiceControlPart.GetHashCode()
-                ^ DeviceInfo.ServiceDescriptionPart.GetHashCode());
-		}
-
-
-        internal void GetServicesList()
-        {
-            var task = Task.Run(async () => { await _proxy.GetServicesListAsync(); });
-            task.Wait();
+                return new Mapping(messageResponse.Protocol
+                    , messageResponse.InternalPort
+                    , messageResponse.ExternalPort
+                    , messageResponse.LeaseDuration
+                    , messageResponse.PortMappingDescription);
+            }
+            catch (MappingException e)
+            {
+                if (e.ErrorCode != 714) throw;
+                return new Mapping(Protocol.Tcp, -1, -1);
+            }
         }
 
         public override string ToString( )

@@ -40,8 +40,8 @@ namespace Open.Nat
         protected ResponseMessageBase(string response, string serviceType)
         {
             _response = response;
-            _document = GetXmlDocument();
             ServiceType = serviceType;
+            _document = GetXmlDocument();
         }
 
         protected XmlNode GetNode()

@@ -77,7 +77,6 @@
     <Compile Include="Upnp\Messages\RequestMessageBase.cs" />
     <Compile Include="Upnp\SoapClient.cs" />
     <Compile Include="Upnp\UpnpNatDeviceInfo.cs" />
-    <Compile Include="Upnp\UpnpServiceProxy.cs" />
     <Compile Include="Upnp\UpnpNatDevice.cs" />
     <Compile Include="Utils\Extensions.cs" />
     <Compile Include="Utils\IIPAddressesProvider.cs" />

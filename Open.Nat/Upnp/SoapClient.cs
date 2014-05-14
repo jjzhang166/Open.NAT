@@ -110,14 +110,13 @@ namespace Open.Nat
             sb.Append("   s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">");
             sb.Append("<s:Body>");
             sb.Append("   <u:" + operationName + " xmlns:u=\"" + _serviceType + "\">");
+            foreach (var a in args)
+            {
+                sb.Append("<" + a.Key + ">" + Convert.ToString(a.Value, CultureInfo.InvariantCulture) + "</" + a.Key +">");
+            }
             sb.Append("   </u:" + operationName + ">");
             sb.Append("</s:Body>");
             sb.Append("</s:Envelope>\r\n\r\n");
-
-            foreach (var a in args)
-            {
-                sb.Append("<" + a.Key + ">" + args + "</" + Convert.ToString(a.Value, CultureInfo.InvariantCulture) + ">");
-            }
 
             var messageBody = Encoding.UTF8.GetBytes(sb.ToString());
             return messageBody;

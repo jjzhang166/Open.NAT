@@ -39,14 +39,14 @@ namespace Open.Nat
     internal class UpnpSearcher : Searcher
     {
         private readonly IIPAddressesProvider _ipprovider;
-        private readonly List<NatDevice> _devices;
+        private readonly IDictionary<string, NatDevice> _devices;
 		private readonly Dictionary<IPAddress, DateTime> _lastFetched;
 
         internal UpnpSearcher(IIPAddressesProvider ipprovider)
         {
             _ipprovider = ipprovider;
             Sockets = CreateSockets();
-            _devices = new List<NatDevice>();
+            _devices = new Dictionary<string, NatDevice>();
 			_lastFetched = new Dictionary<IPAddress, DateTime>();
         }
 
@@ -126,13 +126,18 @@ namespace Open.Nat
                 NatUtility.Log("UPnP Response: Router advertised a '{0}' service", service.ServiceName);
 
                 // We have an internet gateway device now
-                var device = new UpnpNatDevice(localAddress, dataString, service.ServiceUrn);
+                const string locationKey = "Location:";
+                var start = dataString.IndexOf(locationKey, StringComparison.InvariantCultureIgnoreCase) + locationKey.Length;
+                var end = dataString.IndexOf("\n", start, StringComparison.InvariantCultureIgnoreCase);
+                var location = dataString.Substring(start, end - start).Trim();
 
-                if (_devices.Contains(device))
+                var deviceInfo = new UpnpNatDeviceInfo(localAddress, location, service.ServiceUrn);
+
+                if (_devices.ContainsKey(location))
                 {
                     // We already have found this device, so we just refresh it to let people know it's
                     // Still alive. If a device doesn't respond to a search, we dump it.
-                    _devices[_devices.IndexOf(device)].Touch();
+                    _devices[location].Touch();
                     return;
                 }
 				// If we send 3 requests at a time, ensure we only fetch the services list once
@@ -145,11 +150,16 @@ namespace Open.Nat
 				}
 				_lastFetched[endpoint.Address] = DateTime.Now;
 					
-                // Once we've parsed the information we need, we tell the device to retrieve it's service list
-                // Once we successfully receive the service list, the callback provided will be invoked.
-				NatUtility.Log("Fetching service list: {0}", device.DeviceInfo.HostEndPoint);
-                device.GetServicesList();
-                DeviceSetupComplete(device);
+				NatUtility.Log("Fetching service list: {0}", deviceInfo.HostEndPoint);
+
+                UpnpNatDevice device;
+                lock (deviceInfo)
+                {
+                    if(_devices.ContainsKey(location)) return;
+                    device = new UpnpNatDevice(deviceInfo);
+                    _devices.Add(location, device);
+                }
+                OnDeviceFound(new DeviceEventArgs(device));
             }
             catch (Exception ex)
             {
@@ -157,31 +167,8 @@ namespace Open.Nat
                 Trace.WriteLine("ErrorMessage:");
                 Trace.WriteLine(ex.Message);
                 Trace.WriteLine("Data string:");
-                Trace.WriteLine(dataString);
+                Trace.WriteLine(dataString ?? "No data available");
             }
-        }
-
-
-        private void DeviceSetupComplete(NatDevice device)
-        {
-            lock (_devices)
-            {
-                // We don't want the same device in there twice
-                if (_devices.Contains(device))
-                    return;
-
-                _devices.Add(device);
-            }
-
-            OnDeviceFound(new DeviceEventArgs(device));
-        }
-    }
-
-    static class StringExtensions
-    {
-        internal static bool ContainsIgnoreCase(this string s, string pattern)
-        {
-            return s.IndexOf(pattern, StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }
