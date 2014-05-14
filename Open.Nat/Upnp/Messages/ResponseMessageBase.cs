@@ -24,9 +24,57 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Globalization;
+using System.Xml;
+
 namespace Open.Nat
 {
     internal abstract class ResponseMessageBase
     {
+        private readonly string _response;
+        protected string ServiceType;
+        private readonly XmlDocument _document;
+        private XmlNamespaceManager _nsm;
+
+        protected ResponseMessageBase(string response, string serviceType)
+        {
+            _response = response;
+            _document = GetXmlDocument();
+            ServiceType = serviceType;
+        }
+
+        protected XmlNode GetNode()
+        {
+            var typeName = GetType().Name;
+            var messageName = typeName.Substring(0, typeName.Length - "Message".Length);
+            var node = _document.SelectSingleNode("//responseNs:" + messageName, _nsm);
+            if (node == null) throw new InvalidOperationException("The response is invalid: " + messageName);
+
+            return node;
+        }
+
+        private XmlDocument GetXmlDocument()
+        {
+            XmlNode node;
+            var doc = new XmlDocument();
+            doc.LoadXml(_response);
+
+            _nsm = new XmlNamespaceManager(doc.NameTable);
+
+            // Error messages should be found under this namespace
+            _nsm.AddNamespace("errorNs", "urn:schemas-upnp-org:control-1-0");
+            _nsm.AddNamespace("responseNs", ServiceType);
+
+            // Check to see if we have a fault code message.
+            if ((node = doc.SelectSingleNode("//errorNs:UPnPError", _nsm)) != null)
+            {
+                var code = Convert.ToInt32(node.GetXmlElementText("errorCode"), CultureInfo.InvariantCulture);
+                var errorMessage = node.GetXmlElementText("errorDescription");
+                throw new MappingException(code, errorMessage);
+            }
+
+            return doc;
+        }
     }
 }

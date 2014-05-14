@@ -26,8 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Globalization;
-using System.Text;
+using System.Collections.Generic;
 
 namespace Open.Nat
 {
@@ -35,29 +34,19 @@ namespace Open.Nat
 	{
 		private readonly Mapping _mapping;
 
-		public DeletePortMappingRequestMessage(Mapping mapping, string serviceType)
-            : base(serviceType)
+		public DeletePortMappingRequestMessage(Mapping mapping)
 		{
 			_mapping = mapping;
 		}
 
-	    public override string Action
+	    public override IDictionary<string, object> ToXml()
 	    {
-	        get { return "DeletePortMapping"; }
-	    }
-
-	    public override string ToXml()
-		{
-			var builder = new StringBuilder(256);
-			using(var writer = CreateWriter(builder))
-			{
-			    WriteFullElement(writer, "NewRemoteHost", string.Empty);
-			    WriteFullElement(writer, "NewExternalPort", _mapping.PublicPort.ToString(CultureInfo.InvariantCulture));
-			    WriteFullElement(writer, "NewProtocol", _mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
-
-			    writer.Flush();
-			    return builder.ToString();
-			}
+	        return new Dictionary<string, object>
+	            {
+	                {"NewRemoteHost", string.Empty},
+	                {"NewExternalPort", _mapping.PublicPort},
+	                {"NewProtocol", _mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP"}
+	            };
 		}
 	}
 }

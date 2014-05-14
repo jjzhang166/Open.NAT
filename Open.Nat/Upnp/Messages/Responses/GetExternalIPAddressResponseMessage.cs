@@ -34,8 +34,10 @@ namespace Open.Nat
     {
         public IPAddress ExternalIPAddress { get; private set; }
 
-        public GetExternalIPAddressResponseMessage(string ip)
+        public GetExternalIPAddressResponseMessage(string response, string serviceType)
+            : base(response, serviceType)
         {
+            var ip = GetNode().GetXmlElementText("NewExternalIPAddress");
             ExternalIPAddress = IPAddress.Parse(ip);
         }
     }

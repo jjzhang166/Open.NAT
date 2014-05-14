@@ -24,23 +24,23 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 using System.IO;
+using System.Xml;
 
 namespace Open.Nat
 {
     static class StreamExtensions
     {
-        public static byte[] ReadToEnd(this Stream stream)
+        public static string ReadAsMany(this StreamReader stream, int bytesToRead)
         {
-            using (var ts = new MemoryStream())
-            {
-                var buffer = new byte[1048];
-                int bytesRead;
-                while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    ts.Write(buffer, 0, bytesRead);
-                }
-                return ts.ToArray();
-            }
+            var buffer = new char[bytesToRead];
+            stream.ReadBlock(buffer, 0, bytesToRead);
+            return new string(buffer);
+        }
+
+        public static string GetXmlElementText(this XmlNode node, string elementName)
+        {
+            var element = node[elementName];
+            return element != null ? element.InnerText : string.Empty;
         }
     }
 }

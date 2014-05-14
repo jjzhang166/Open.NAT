@@ -26,8 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Globalization;
-using System.Text;
+using System.Collections.Generic;
 
 namespace Open.Nat
 {
@@ -36,30 +35,20 @@ namespace Open.Nat
 		private readonly Protocol _protocol;
         private readonly int _externalPort;
 
-		public GetSpecificPortMappingEntryRequestMessage(Protocol protocol, int externalPort, string serviceType)
-            : base(serviceType)
+		public GetSpecificPortMappingEntryRequestMessage(Protocol protocol, int externalPort)
 		{
 			_protocol = protocol;
 			_externalPort = externalPort;
 		}
 
-	    public override string Action
+	    public override IDictionary<string,object> ToXml()
 	    {
-	        get { return "GetSpecificPortMappingEntry"; }
-	    }
-
-	    public override string ToXml()
-		{
-			var sb = new StringBuilder(64);
-			using(var writer = CreateWriter(sb))
-			{
-			    WriteFullElement(writer, "NewRemoteHost", string.Empty);
-			    WriteFullElement(writer, "NewExternalPort", _externalPort.ToString(CultureInfo.InvariantCulture));
-			    WriteFullElement(writer, "NewProtocol", _protocol == Protocol.Tcp ? "TCP" : "UDP");
-			    writer.Flush();
-
-			    return sb.ToString();
-			}
+	        return new Dictionary<string, object>
+	            {
+	                {"NewRemoteHost", string.Empty},
+	                {"NewExternalPort", _externalPort},
+	                {"NewProtocol", _protocol == Protocol.Tcp ? "TCP" : "UDP"}
+	            };
 		}
 	}
 }

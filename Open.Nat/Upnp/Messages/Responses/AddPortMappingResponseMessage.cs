@@ -1,9 +1,7 @@
 //
 // Authors:
-//   Alan McGovern  alan.mcgovern@gmail.com
 //   Lucas Ontivero lucas.ontivero@gmail.com
 //
-// Copyright (C) 2006 Alan McGovern
 // Copyright (C) 2014 Lucas Ontivero
 //
 // Permission is hereby granted, free of charge, to any person obtaining
@@ -26,15 +24,9 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Collections.Generic;
-
 namespace Open.Nat
 {
-    internal class GetExternalIPAddressRequestMessage : RequestMessageBase
+    internal class AddPortMappingResponseMessage : ResponseMessageBase
     {
-        public override IDictionary<string, object> ToXml()
-        {
-            return new Dictionary<string, object>();
-        }
     }
 }

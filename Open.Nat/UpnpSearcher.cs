@@ -107,11 +107,20 @@ namespace Open.Nat
                 // If this device does not have a WANIPConnection service, then ignore it
                 // Technically i should be checking for WANIPConnection:1 and InternetGatewayDevice:1
                 // but there are some routers missing the '1'.
-                var serviceNames = new[] {"WANIPConnection", "InternetGatewayDevice", "WANPPPConnection"};
-                var service = (from serviceName in serviceNames
-                                let serviceUrn = string.Format("urn:schemas-upnp-org:service:{0}:1", serviceName)
-                                where dataString.ContainsIgnoreCase(serviceUrn)
-                                select new {ServiceName = serviceName, ServiceUrn = serviceUrn}).FirstOrDefault();
+                var serviceNames = new[]{
+                    "WANIPConnection:1", 
+                    "WANIPConnection:2", 
+                    "WANPPPConnection:1", 
+                    "WANPPPConnection:2", 
+                    "InternetGatewayDevice:1"
+                };
+
+                var services = from serviceName in serviceNames
+                               let serviceUrn = string.Format("urn:schemas-upnp-org:service:{0}", serviceName)
+                               where dataString.ContainsIgnoreCase(serviceUrn)
+                               select new {ServiceName = serviceName, ServiceUrn = serviceUrn};
+
+                var service = services.FirstOrDefault();
 
                 if (service == null) return;
                 NatUtility.Log("UPnP Response: Router advertised a '{0}' service", service.ServiceName);

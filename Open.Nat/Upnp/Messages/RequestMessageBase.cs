@@ -30,11 +30,8 @@ using System.Collections.Generic;
 
 namespace Open.Nat
 {
-    internal class GetExternalIPAddressRequestMessage : RequestMessageBase
+    internal abstract class RequestMessageBase
     {
-        public override IDictionary<string, object> ToXml()
-        {
-            return new Dictionary<string, object>();
-        }
+        public abstract IDictionary<string, object> ToXml();
     }
 }

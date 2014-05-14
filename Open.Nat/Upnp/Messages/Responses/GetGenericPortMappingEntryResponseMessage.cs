@@ -43,13 +43,16 @@ namespace Open.Nat
         public string PortMappingDescription { get; private set; }
         public int LeaseDuration { get; private set; }
 
-        public GetGenericPortMappingEntryResponseMessage(XmlNode data, bool genericMapping)
+        public GetGenericPortMappingEntryResponseMessage(string response, string serviceType, bool _genericMapping) 
+            : base(response, serviceType)
         {
-            RemoteHost = (genericMapping) ? data.GetXmlElementText("NewRemoteHost") : string.Empty;
-            ExternalPort = (genericMapping) ? Convert.ToInt32(data.GetXmlElementText("NewExternalPort")) : -1;
-            if (genericMapping)
-                Protocol = data.GetXmlElementText("NewProtocol").Equals("TCP", StringComparison.InvariantCultureIgnoreCase) 
-                    ? Protocol.Tcp 
+            var data = GetNode();
+
+            RemoteHost = (_genericMapping) ? data.GetXmlElementText("NewRemoteHost") : string.Empty;
+            ExternalPort = (_genericMapping) ? Convert.ToInt32(data.GetXmlElementText("NewExternalPort")) : -1;
+            if (_genericMapping)
+                Protocol = data.GetXmlElementText("NewProtocol").Equals("TCP", StringComparison.InvariantCultureIgnoreCase)
+                    ? Protocol.Tcp
                     : Protocol.Udp;
             else
                 Protocol = Protocol.Udp;
@@ -59,15 +62,6 @@ namespace Open.Nat
             Enabled = data.GetXmlElementText("NewEnabled") == "1";
             PortMappingDescription = data.GetXmlElementText("NewPortMappingDescription");
             LeaseDuration = Convert.ToInt32(data.GetXmlElementText("NewLeaseDuration"));
-        }
-    }
-
-    static class XmlNodeExtensions
-    {
-        public static string GetXmlElementText(this XmlNode node, string elementName)
-        {
-            var element = node[elementName];
-            return element != null ? element.InnerText : string.Empty;
         }
     }
 }

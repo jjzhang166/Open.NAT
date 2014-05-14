@@ -17,6 +17,8 @@
     </UpgradeBackupLocation>
     <OldToolsVersion>2.0</OldToolsVersion>
     <TargetFrameworkProfile />
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -70,10 +72,10 @@
     <Compile Include="Upnp\Messages\Requests\GetGenericPortMappingEntry.cs" />
     <Compile Include="Upnp\Messages\Requests\GetSpecificPortMappingEntryMessage.cs" />
     <Compile Include="Upnp\Messages\ResponseMessageBase.cs" />
-    <Compile Include="Upnp\Messages\Responses\NoResponseMessage.cs" />
     <Compile Include="Upnp\Messages\Responses\GetExternalIPAddressResponseMessage.cs" />
     <Compile Include="Upnp\Messages\Responses\GetGenericPortMappingEntryResponseMessage.cs" />
-    <Compile Include="Upnp\Messages\UpnpMessage.cs" />
+    <Compile Include="Upnp\Messages\RequestMessageBase.cs" />
+    <Compile Include="Upnp\SoapClient.cs" />
     <Compile Include="Upnp\UpnpNatDeviceInfo.cs" />
     <Compile Include="Upnp\UpnpServiceProxy.cs" />
     <Compile Include="Upnp\UpnpNatDevice.cs" />
@@ -89,4 +91,5 @@
   <ProjectExtensions>
     <VisualStudio AllowExistingFolder="true" />
   </ProjectExtensions>
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
 </Project>

@@ -26,8 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Globalization;
-using System.Text;
+using System.Collections.Generic;
 
 namespace Open.Nat
 {
@@ -35,28 +34,17 @@ namespace Open.Nat
     {
         private readonly int _index;
 
-        public GetGenericPortMappingEntry(int index, string serviceType)
-            : base(serviceType)
+        public GetGenericPortMappingEntry(int index)
         {
             _index = index;
         }
 
-        public override string Action
+        public override IDictionary<string,object> ToXml()
         {
-            get { return "GetGenericPortMappingEntry"; }
-        }
-
-        public override string ToXml()
-        {
-            var sb = new StringBuilder(128);
-            
-            using(var writer = CreateWriter(sb))
-            {
-                WriteFullElement(writer, "NewPortMappingIndex", _index.ToString(CultureInfo.InvariantCulture));
-
-                writer.Flush();
-                return sb.ToString();
-            }
+            return new Dictionary<string, object>
+                {
+                    {"NewPortMappingIndex", _index}
+                };
         }
     }
 }

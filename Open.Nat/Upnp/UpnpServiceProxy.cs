@@ -24,11 +24,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
-
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -40,30 +37,32 @@ namespace Open.Nat
     internal class UpnpServiceProxy
     {
         private readonly UpnpNatDeviceInfo _deviceInfo;
+        private readonly SoapClient _soapClient;
 
         public UpnpServiceProxy(UpnpNatDeviceInfo deviceInfo)
         {
             _deviceInfo = deviceInfo;
+            _soapClient = new SoapClient(_deviceInfo.ServiceControlUri, _deviceInfo.ServiceType);
         }
 
         public async Task<IPAddress> GetExternalIPAsync()
         {
-            var message = new GetExternalIPAddressRequestMessage(_deviceInfo.ServiceType);
-            var response =
-                await RequestAsync<GetExternalIPAddressResponseMessage>(message);
+            var message = new GetExternalIPAddressRequestMessage();
+            var responseData = await _soapClient.InvokeAsync("GetExternalIPAddress", message.ToXml());
+            var response = new GetExternalIPAddressResponseMessage(responseData, _deviceInfo.ServiceType);
             return response.ExternalIPAddress;
         }
 
         public async Task CreatePortMapAsync(Mapping mapping)
         {
-            var message = new CreatePortMappingRequestMessage(mapping, _deviceInfo.LocalAddress, _deviceInfo.ServiceType);
-            await RequestAsync<NoResponseMessage>(message);
+            var message = new CreatePortMappingRequestMessage(mapping, _deviceInfo.LocalAddress);
+            await _soapClient.InvokeAsync("AddPortMapping", message.ToXml());
         }
 
         public async Task DeletePortMapAsync(Mapping mapping)
         {
-            var message = new DeletePortMappingRequestMessage(mapping, _deviceInfo.ServiceType);
-            await RequestAsync<NoResponseMessage>(message);
+            var message = new DeletePortMappingRequestMessage(mapping);
+            await _soapClient.InvokeAsync("DeletePortMapping", message.ToXml());
         }
 
         public async Task<Mapping[]> GetAllMappingsAsync()
@@ -75,11 +74,10 @@ namespace Open.Nat
             {
                 try
                 {
-                    var message = new GetGenericPortMappingEntry(index, _deviceInfo.ServiceType);
+                    var message = new GetGenericPortMappingEntry(index);
 
-                    var responseMessage = await RequestAsync<GetGenericPortMappingEntryResponseMessage>(message);
-
-                    if (responseMessage == null) break;
+                    var responseData = await _soapClient.InvokeAsync("GetGenericPortMappingEntry", message.ToXml());
+                    var responseMessage = new GetGenericPortMappingEntryResponseMessage(responseData, _deviceInfo.ServiceType, true);
 
                     var mapping = new Mapping(responseMessage.Protocol
                         , responseMessage.InternalPort
@@ -104,8 +102,9 @@ namespace Open.Nat
         {
             try
             {
-                var message = new GetSpecificPortMappingEntryRequestMessage(protocol, port, _deviceInfo.ServiceType);
-                var messageResponse = await RequestAsync<GetGenericPortMappingEntryResponseMessage>(message);
+                var message = new GetSpecificPortMappingEntryRequestMessage(protocol, port);
+                var responseData = await _soapClient.InvokeAsync("GetSpecificPortMappingEntry", message.ToXml());
+                var messageResponse = new GetGenericPortMappingEntryResponseMessage(responseData, _deviceInfo.ServiceType, false);
 
                 return new Mapping(messageResponse.Protocol
                     , messageResponse.InternalPort
@@ -120,133 +119,12 @@ namespace Open.Nat
             }
         }
 
-        private WebRequest BuildRequestServiceControl(string action)
-        {
-            NatUtility.Log("Initiating request to: {0}", _deviceInfo.ServiceControlUri);
-
-            var request = WebRequest.CreateHttp(_deviceInfo.ServiceControlUri);
-            request.KeepAlive = false;
-            request.Method = "POST";
-            request.ContentType = "text/xml; charset=\"utf-8\"";
-            request.Headers.Add("SOAPACTION", "\"" + _deviceInfo.ServiceType + "#" + action + "\"");
-
-            return request;
-        }
-
         private WebRequest BuildRequestServiceDescription()
         {
             var request = WebRequest.CreateHttp(_deviceInfo.ServiceDescriptionUri);
             request.Headers.Add("ACCEPT-LANGUAGE", "en");
             request.Method = "GET";
             return request;
-        }
-
-
-
-        private async Task<T> RequestAsync<T>(RequestMessageBase requestMessage) where T: ResponseMessageBase
-        {
-            var messageBody = requestMessage.Envelop();
-            var request = BuildRequestServiceControl(requestMessage.Action);
-
-            request.ContentLength = messageBody.Length;
-
-            if (messageBody.Length > 0)
-            {
-                using (var stream = await request.GetRequestStreamAsync())
-                {
-                    stream.Write(messageBody, 0, messageBody.Length);
-                }
-            }
-
-            WebResponse response = null;
-            try
-            {
-                try
-                {
-                    response = await request.GetResponseAsync();
-                }
-                catch (WebException ex)
-                {
-                    // Even if the request "failed" i want to continue on to read out the response from the router
-                    response = ex.Response as HttpWebResponse;
-                    if (response == null)
-                        throw;
-                }
-                return response != null 
-                    ? DecodeMessageFromResponse<T>(response.GetResponseStream(), response.ContentLength)
-                    : null;
-            }
-            finally
-            {
-                if (response != null)
-                    response.Close();
-            }
-        }
-
-        private T DecodeMessageFromResponse<T>(Stream s, long length) where T: ResponseMessageBase
-        {
-            var data = new StringBuilder();
-
-            // Read out the content of the message, hopefully picking 
-            // everything up in the case where we have no contentlength
-            if (length != -1)
-            {
-                int bytesRead;
-                var buffer = new byte[length];
-                for (var i = 0; i < length; i += bytesRead)
-                {
-                    bytesRead = s.Read(buffer, 0, buffer.Length);
-                    data.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
-                }
-            }
-            else
-            {
-                data.Append(Encoding.UTF8.GetString(s.ReadToEnd()));
-            }
-
-            // Once we have our content, we need to see what kind of message it is. It'll either a an error
-            // or a response based on the action we performed.
-            return (T)Decode(data.ToString());
-        }
-
-        private ResponseMessageBase Decode(string message)
-        {
-            XmlNode node;
-            var doc = new XmlDocument();
-            doc.LoadXml(message);
-
-            var nsm = new XmlNamespaceManager(doc.NameTable);
-
-            // Error messages should be found under this namespace
-            nsm.AddNamespace("errorNs", "urn:schemas-upnp-org:control-1-0");
-            nsm.AddNamespace("responseNs", _deviceInfo.ServiceType);
-
-            // Check to see if we have a fault code message.
-            if ((node = doc.SelectSingleNode("//errorNs:UPnPError", nsm)) != null)
-            {
-                var code = Convert.ToInt32(node.GetXmlElementText("errorCode"), CultureInfo.InvariantCulture);
-                var errorMessage = node.GetXmlElementText("errorDescription");
-                throw new MappingException(code, errorMessage);
-            }
-
-            if (doc.SelectSingleNode("//responseNs:AddPortMappingResponse", nsm) != null)
-                return new NoResponseMessage();
-
-            if (doc.SelectSingleNode("//responseNs:DeletePortMappingResponse", nsm) != null)
-                return new NoResponseMessage();
-
-            if ((node = doc.SelectSingleNode("//responseNs:GetExternalIPAddressResponse", nsm)) != null)
-                return new GetExternalIPAddressResponseMessage(node.GetXmlElementText("NewExternalIPAddress"));
-
-            if ((node = doc.SelectSingleNode("//responseNs:GetGenericPortMappingEntryResponse", nsm)) != null)
-                return new GetGenericPortMappingEntryResponseMessage(node, true);
-
-            if ((node = doc.SelectSingleNode("//responseNs:GetSpecificPortMappingEntryResponse", nsm)) != null)
-                return new GetGenericPortMappingEntryResponseMessage(node, false);
-
-            NatUtility.Log("Unknown message returned. Please send me back the following XML:");
-            NatUtility.Log(message);
-            throw new ArgumentException("message");
         }
 
         public async Task GetServicesListAsync()
@@ -314,14 +192,15 @@ namespace Open.Nat
 
         private XmlDocument ReadXmlResponse(WebResponse response)
         {
-            using(var stream = response.GetResponseStream())
+            using(var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
             {
-                var responseBody = stream.ReadToEnd();
-                var servicesXml = Encoding.UTF8.GetString(responseBody);
+                var servicesXml = reader.ReadToEnd();
                 var xmldoc = new XmlDocument();
                 xmldoc.LoadXml(servicesXml);
                 return xmldoc;
             }
         }
     }
+
+
 }

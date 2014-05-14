@@ -26,7 +26,7 @@
 
 namespace Open.Nat
 {
-    internal class NoResponseMessage : ResponseMessageBase
+    internal class DeletePortMappingResponseMessage : ResponseMessageBase
     {
     }
 }

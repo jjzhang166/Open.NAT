@@ -26,9 +26,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections.Generic;
 using System.Net;
-using System.Globalization;
-using System.Text;
 
 namespace Open.Nat
 {
@@ -37,35 +36,25 @@ namespace Open.Nat
         private readonly IPAddress _localIpAddress;
         private readonly Mapping _mapping;
 
-        public CreatePortMappingRequestMessage(Mapping mapping, IPAddress localIpAddress, string serviceType) 
-            : base(serviceType)
+        public CreatePortMappingRequestMessage(Mapping mapping, IPAddress localIpAddress) 
         {
             _mapping = mapping;
             _localIpAddress = localIpAddress;
         }
 
-        public override string Action
+        public override IDictionary<string, object> ToXml()
         {
-            get { return "AddPortMapping"; }
-        }
-
-        public override string ToXml()
-        {
-            var builder = new StringBuilder(256);
-            using(var writer = CreateWriter(builder))
-            {
-                WriteFullElement(writer, "NewRemoteHost", string.Empty);
-                WriteFullElement(writer, "NewExternalPort", _mapping.PublicPort.ToString(CultureInfo.InvariantCulture));
-                WriteFullElement(writer, "NewProtocol", _mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
-                WriteFullElement(writer, "NewInternalPort", _mapping.PrivatePort.ToString(CultureInfo.InvariantCulture));
-                WriteFullElement(writer, "NewInternalClient", _localIpAddress.ToString());
-                WriteFullElement(writer, "NewEnabled", "1");
-                WriteFullElement(writer, "NewPortMappingDescription", _mapping.Description);
-                WriteFullElement(writer, "NewLeaseDuration", _mapping.Lifetime.ToString(CultureInfo.InvariantCulture));
-
-                writer.Flush();
-                return builder.ToString();
-            }
+            return new Dictionary<string, object>
+                {
+                    {"NewRemoteHost", string.Empty},
+                    {"NewExternalPort", _mapping.PublicPort},
+                    {"NewProtocol", _mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP"},
+                    {"NewInternalPort", _mapping.PrivatePort},
+                    {"NewInternalClient", _localIpAddress},
+                    {"NewEnabled", 1},
+                    {"NewPortMappingDescription", _mapping.Description},
+                    {"NewLeaseDuration", _mapping.Lifetime}
+                };
         }
     }
 }

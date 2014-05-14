@@ -3,17 +3,17 @@
   <metadata>
     <id>Open.Nat</id>
     <version>$version$</version>
-    <authors>
-      Alan McGovern &lt;alan.mcgovern@gmail.com&gt;
-      Ben Motmans &lt;ben.motmans@gmail.com&gt;
-      Lucas Ontivero &lt;lucasontivero@gmail.com&gt;
-    </authors>
+    <title>Open.Nat</title>
+    <authors>Alan McGovern, Ben Motmans, Lucas Ontivero</authors>
     <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
     <projectUrl>https://github.com/lontivero/Open.Nat</projectUrl>
+    <iconUrl></iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>
       Open.Nat is a lightweight and easy-to-use class library to allow port forwarding in NAT devices (Network Address Translator) that support Universal Plug and Play (UPNP) and/or Port Mapping Protocol (PMP).
     </description>
+    <summary>Library to allow port forwarding in NAT devices that support UPNP and/or PMP.</summary>
+    <language>en-US</language>
     <copyright>Please see LICENSE for more details.</copyright>
     <tags>NAT TRANSVERSAL UPNP PMP PORT FORWARD</tags>
   </metadata>

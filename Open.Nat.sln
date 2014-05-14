@@ -14,6 +14,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{87CD0D
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{94F0AE28-727F-497A-AC20-EB5B0C5EBA9A}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		AUTHORS = AUTHORS
+		INSTALL = INSTALL
+		LICENSE = LICENSE
+		Open.Nat\Open.Nat.nuspec = Open.Nat\Open.Nat.nuspec
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
