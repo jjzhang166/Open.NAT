@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -54,7 +55,7 @@ namespace Open.Nat
         {
             if (!IsSearchTime) return;
 
-            NatUtility.Log("Searching for: {0}", GetType().Name);
+            NatUtility.TraceSource.LogInfo("Searching for: {0}", GetType().Name);
 
             foreach (var socket in Sockets)
             {
@@ -62,8 +63,10 @@ namespace Open.Nat
                 {
                     Search(socket);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    NatUtility.TraceSource.LogError("Error searching {0} - Details:", GetType().Name);
+                    NatUtility.TraceSource.LogError(e.ToString());
                     continue; // Ignore any search errors
                 }
             }

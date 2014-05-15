@@ -101,8 +101,9 @@ namespace Open.Nat
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                NatUtility.TraceSource.LogError("There was a problem finding gateways: " + e);
                 // NAT-PMP does not use multicast, so there isn't really a good fallback.
             }
 		}
@@ -126,7 +127,9 @@ namespace Open.Nat
             // The nat-pmp search message. Must be sent to GatewayIP:53531
             var buffer = new[] { PmpConstants.Version, PmpConstants.OperationExternalAddressRequest };
             foreach (var gatewayEndpoint in _gatewayLists[client])
+            {
                 client.Send(buffer, buffer.Length, gatewayEndpoint);
+            }
         }
 
         private bool IsSearchAddress(IPAddress address)
@@ -145,7 +148,7 @@ namespace Open.Nat
 
             int errorcode = IPAddress.NetworkToHostOrder(BitConverter.ToInt16(response, 2));
             if (errorcode != 0)
-                NatUtility.Log("Non zero error: {0}", errorcode);
+                NatUtility.TraceSource.LogError("Non zero error: {0}", errorcode);
 
             var publicIp = new IPAddress(new[] { response[8], response[9], response[10], response[11] });
             NextSearch = DateTime.Now.AddMinutes(5);

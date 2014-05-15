@@ -27,7 +27,7 @@
 //
 
 using System;
-using System.Linq;
+using System.Diagnostics;
 using System.Threading;
 using System.Collections.Generic;
 using System.IO;
@@ -43,12 +43,11 @@ namespace Open.Nat
         private static readonly ManualResetEvent Searching;
         internal static List<ISearcher> Searchers = new List<ISearcher>
         {
-            new UpnpSearcher(new IPAddressesProvider()), 
-            new PmpSearcher(new IPAddressesProvider())
+              new UpnpSearcher(new IPAddressesProvider())
+            //, new PmpSearcher(new IPAddressesProvider())
         };
 
-	    public static TextWriter Logger { get; set; }
-	    public static bool Verbose { get; set; }
+        public readonly static TraceSource TraceSource = new TraceSource("OpenNat");
 
 	    static NatUtility()
         {
@@ -57,6 +56,7 @@ namespace Open.Nat
 
         public static void Initialize()
         {
+            TraceSource.LogInfo("Initializing");
             foreach (var searcher in Searchers)
             {
                 searcher.DeviceFound += OnDeviceFound;
@@ -67,6 +67,7 @@ namespace Open.Nat
 
         private static void SearchAndListen()
         {
+            TraceSource.LogInfo("Searching");
             while (true)
             {
                 Searching.WaitOne();
@@ -95,22 +96,29 @@ namespace Open.Nat
 	    private static void OnDeviceFound(object sender, DeviceEventArgs args)
 	    {
 	        var handler = DeviceFound;
-            if (handler != null) handler(sender, args);
+            TraceSource.LogInfo("{0} device found. ", args.Device.GetType().Name);
+            TraceSource.LogInfo("---------------------VVV\n{0}", args.Device.ToString());
+            if (handler != null)
+            {
+                handler(sender, args);
+            }
+            else
+            {
+                TraceSource.LogWarn(
+                 "*** There is no handler to notify about the finding! ***\n" +
+                "Go to https://github.com/lontivero/Open.Nat/wiki/Warnings#there-is-no-handler-to-notify-about-the-finding");
+            }
 	    }
-
-	    internal static void Log(string format, params object[] args)
-		{
-			var logger = Logger;
-			if (logger != null) logger.WriteLine(format, args);
-		}
 
 		public static void StartDiscovery ()
 		{
+            TraceSource.LogInfo("StartDiscovery");
             Searching.Set();
 		}
 
 		public static void StopDiscovery ()
 		{
+            TraceSource.LogInfo("StopDiscovery");
             Searching.Reset();
 		}
 	}

@@ -46,11 +46,11 @@ namespace Open.Nat
 		public const int RecommendedLeaseTime = 60 * 60;
 		public const int DefaultLeaseTime = RecommendedLeaseTime;
 		
-		public const short ResultCodeSuccess = 0;
-		public const short ResultCodeUnsupportedVersion = 1;
-		public const short ResultCodeNotAuthorized = 2;
-		public const short ResultCodeNetworkFailure = 3;
-		public const short ResultCodeOutOfResources = 4;
-		public const short ResultCodeUnsupportedOperationCode = 5;
-	}
+		public const short ResultCodeSuccess = 0;                    // Success
+		public const short ResultCodeUnsupportedVersion = 1;         // Unsupported Version
+		public const short ResultCodeNotAuthorized = 2;              // Not Authorized/Refused (e.g. box supports mapping, but user has turned feature off)
+		public const short ResultCodeNetworkFailure = 3;             // Network Failure (e.g. NAT box itself has not obtained a DHCP lease)
+		public const short ResultCodeOutOfResources = 4;             // Out of resources (NAT box cannot create any more mappings at this time)
+		public const short ResultCodeUnsupportedOperationCode = 5;   // Unsupported opcode
+    }
 }

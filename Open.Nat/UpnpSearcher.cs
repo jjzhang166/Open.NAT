@@ -39,14 +39,14 @@ namespace Open.Nat
     internal class UpnpSearcher : Searcher
     {
         private readonly IIPAddressesProvider _ipprovider;
-        private readonly IDictionary<string, NatDevice> _devices;
+        private readonly IDictionary<Uri, NatDevice> _devices;
 		private readonly Dictionary<IPAddress, DateTime> _lastFetched;
 
         internal UpnpSearcher(IIPAddressesProvider ipprovider)
         {
             _ipprovider = ipprovider;
             Sockets = CreateSockets();
-            _devices = new Dictionary<string, NatDevice>();
+            _devices = new Dictionary<Uri, NatDevice>();
 			_lastFetched = new Dictionary<IPAddress, DateTime>();
         }
 
@@ -101,8 +101,8 @@ namespace Open.Nat
             {
                 dataString = Encoding.UTF8.GetString(response);
 
-				if (NatUtility.Verbose)
-					NatUtility.Log("UPnP Response: {0}", dataString);
+				//if (NatUtility.Verbose)
+                NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "UPnP Response: {0}", dataString);
 
                 // If this device does not have a WANIPConnection service, then ignore it
                 // Technically i should be checking for WANIPConnection:1 and InternetGatewayDevice:1
@@ -123,7 +123,7 @@ namespace Open.Nat
                 var service = services.FirstOrDefault();
 
                 if (service == null) return;
-                NatUtility.Log("UPnP Response: Router advertised a '{0}' service", service.ServiceName);
+                NatUtility.TraceSource.LogInfo("UPnP Response: Router advertised a '{0}' service!!!", service.ServiceName);
 
                 // We have an internet gateway device now
                 const string locationKey = "Location:";
@@ -133,11 +133,12 @@ namespace Open.Nat
 
                 var deviceInfo = new UpnpNatDeviceInfo(localAddress, location, service.ServiceUrn);
 
-                if (_devices.ContainsKey(location))
+                if (_devices.ContainsKey(deviceInfo.ServiceDescriptionUri))
                 {
                     // We already have found this device, so we just refresh it to let people know it's
                     // Still alive. If a device doesn't respond to a search, we dump it.
-                    _devices[location].Touch();
+                    NatUtility.TraceSource.LogInfo("Already found - Ignored");
+                    _devices[deviceInfo.ServiceDescriptionUri].Touch();
                     return;
                 }
 				// If we send 3 requests at a time, ensure we only fetch the services list once
@@ -149,25 +150,36 @@ namespace Open.Nat
 						return;
 				}
 				_lastFetched[endpoint.Address] = DateTime.Now;
-					
-				NatUtility.Log("Fetching service list: {0}", deviceInfo.HostEndPoint);
 
-                UpnpNatDevice device;
-                lock (deviceInfo)
-                {
-                    if(_devices.ContainsKey(location)) return;
-                    device = new UpnpNatDevice(deviceInfo);
-                    _devices.Add(location, device);
-                }
-                OnDeviceFound(new DeviceEventArgs(device));
+                NatUtility.TraceSource.LogInfo("{0}: Fetching service list", deviceInfo.HostEndPoint);
+
+                FetchDeciceServiceListInfo(deviceInfo);
             }
             catch (Exception ex)
             {
-                Trace.WriteLine("Unhandled exception when trying to decode a device's response Send me the following data: ");
-                Trace.WriteLine("ErrorMessage:");
-                Trace.WriteLine(ex.Message);
-                Trace.WriteLine("Data string:");
-                Trace.WriteLine(dataString ?? "No data available");
+                NatUtility.TraceSource.LogError("Unhandled exception when trying to decode a device's response Send me the following data: ");
+                NatUtility.TraceSource.LogError("ErrorMessage:");
+                NatUtility.TraceSource.LogError(ex.Message);
+                NatUtility.TraceSource.LogError("Data string:");
+                NatUtility.TraceSource.LogError(dataString ?? "No data available");
+            }
+        }
+
+        private void FetchDeciceServiceListInfo(UpnpNatDeviceInfo deviceInfo)
+        {
+            try
+            {
+                UpnpNatDevice device;
+                lock (deviceInfo)
+                {
+                    device = new UpnpNatDevice(deviceInfo);
+                    _devices.Add(deviceInfo.ServiceDescriptionUri, device);
+                }
+                OnDeviceFound(new DeviceEventArgs(device));
+            }
+            catch (Exception)
+            {
+                NatUtility.TraceSource.LogError("Found device couldn't be configured");
             }
         }
     }

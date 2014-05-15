@@ -83,27 +83,9 @@ namespace Open.Nat
 			return Expiration < DateTime.Now;
 		}
 
-		public override bool Equals (object obj)
-		{
-			var other = obj as Mapping;
-			return other != null && (Protocol == other.Protocol &&
-			                         PrivatePort == other.PrivatePort && 
-                                     PublicPort == other.PublicPort);
-		}
-
-		public override int GetHashCode()
-		{
-			return Protocol.GetHashCode() ^ PrivatePort.GetHashCode() ^ PublicPort.GetHashCode();
-		}
-
         public override string ToString( )
         {
-            return string.Format(
-@"Protocol  : {0}, 
-Public Port : {1}, 
-Private Port: {2}, 
-Description : {3}, 
-Expiration  : {4}, Lifetime: {5}", 
+            return string.Format("Protocol: {0} Public Port: {1} Private Port: {2}  Description: {3} Expiration: {4} Lifetime: {5}", 
             Protocol, PublicPort, PrivatePort, Description, Expiration, Lifetime );
         }
 	}

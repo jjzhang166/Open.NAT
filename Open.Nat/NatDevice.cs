@@ -29,6 +29,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -46,7 +47,7 @@ namespace Open.Nat
         public abstract Task CreatePortMapAsync(Mapping mapping);
         public abstract Task DeletePortMapAsync(Mapping mapping);
         
-        public abstract Task<Mapping[]> GetAllMappingsAsync();
+        public abstract Task<IEnumerable<Mapping>> GetAllMappingsAsync();
         public abstract Task<IPAddress> GetExternalIPAsync();
         public abstract Task<Mapping> GetSpecificMappingAsync(Protocol protocol, int port);
 	}

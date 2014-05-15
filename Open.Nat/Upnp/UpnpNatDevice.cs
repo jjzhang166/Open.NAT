@@ -69,48 +69,36 @@ namespace Open.Nat
             await _soapClient.InvokeAsync("DeletePortMapping", message.ToXml());
         }
 
-		public override async Task<Mapping[]> GetAllMappingsAsync()
+		public override async Task<IEnumerable<Mapping>> GetAllMappingsAsync()
 		{
-            try
-            {
-                var mappings = new List<Mapping>();
-                var index = 0;
+            var index = 0;
+		    var mappings = new List<Mapping>();
 
-                while (true)
+            while (true)
+            {
+                try
                 {
-                    try
-                    {
-                        var message = new GetGenericPortMappingEntry(index);
+                    var message = new GetGenericPortMappingEntry(index);
 
-                        var responseData = await _soapClient.InvokeAsync("GetGenericPortMappingEntry", message.ToXml());
-                        var responseMessage = new GetGenericPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, true);
+                    var responseData = await _soapClient.InvokeAsync("GetGenericPortMappingEntry", message.ToXml());
+                    var responseMessage = new GetGenericPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, true);
 
-                        var mapping = new Mapping(responseMessage.Protocol
-                            , responseMessage.InternalPort
-                            , responseMessage.ExternalPort
-                            , responseMessage.LeaseDuration
-                            , responseMessage.PortMappingDescription);
-
-                        mappings.Add(mapping);
-                        index++;
-                    }
-                    catch (MappingException e)
-                    {
-                        if (e.ErrorCode == 713) break;
-                        throw;
-                    }
+                    var mapping = new Mapping(responseMessage.Protocol
+                        , responseMessage.InternalPort
+                        , responseMessage.ExternalPort
+                        , responseMessage.LeaseDuration
+                        , responseMessage.PortMappingDescription);
+                    mappings.Add(mapping);
+                    index++;
                 }
-                return mappings.ToArray();
-            }
-            catch (WebException ex)
-            {
-                // Even if the request "failed" i want to continue on to read out the response from the router
-                var httpresponse = ex.Response as HttpWebResponse;
-                if (httpresponse == null && (int)ex.Status != 713)
+                catch (MappingException e)
+                {
+                    if (e.ErrorCode == 713) break; // there are no more mappings
                     throw;
-
-                return Enumerable.Empty<Mapping>().ToArray();
+                }
             }
+
+            return mappings.ToArray();
         }
 
 		public override async Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int port)
@@ -138,8 +126,8 @@ namespace Open.Nat
         {
             //GetExternalIP is blocking and can throw exceptions, can't use it here.
             return String.Format( 
-                "UpnpNatDevice - EndPoint: {0}, External IP: {1}, Control Url: {2}, Service Description Url: {3}, Service Type: {4}, Last Seen: {5}",
-                DeviceInfo.HostEndPoint, "Manually Check" /*this.GetExternalIP()*/, DeviceInfo.ServiceControlPart, DeviceInfo.ServiceDescriptionPart, DeviceInfo.ServiceType, LastSeen);
+                "EndPoint: {0}\nControl Url: {1}\nService Description Url: {2}\nService Type: {3}\nLast Seen: {4}",
+                DeviceInfo.HostEndPoint, DeviceInfo.ServiceControlUri, DeviceInfo.ServiceDescriptionUri, DeviceInfo.ServiceType, LastSeen);
         }
 	}
 }

@@ -25,55 +25,66 @@
 //
 
 using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
 using System.Threading;
-using Open.Nat;
 
 namespace Open.Nat.ConsoleTest
 {
 	class NatTest
 	{
-		public static void Main(string[] args)
+        public static void Main(string[] args)
 		{
-			new NatTest ();
-		}
-		
-		public NatTest ()
-		{
-		    NatUtility.Logger = Console.Out ;
-		    NatUtility.Verbose = true;
-			NatUtility.DeviceFound += DeviceFound;
-			NatUtility.Initialize();
-			NatUtility.StartDiscovery ();
-			
-			Console.WriteLine ("Discovery started");
-			
-			Thread.Sleep (7000);
-            NatUtility.StopDiscovery();
-            Console.WriteLine("Discovery finished");
-		    Console.ReadKey();
+            NatUtility.TraceSource.Switch.Level = SourceLevels.Information;
+            NatUtility.TraceSource.Listeners.Add(new ColorConsoleListener());
 
-		}
+            NatUtility.DeviceFound += DeviceFound;
+            NatUtility.Initialize();
+            NatUtility.StartDiscovery();
+
+            Thread.Sleep(5000);
+            NatUtility.StopDiscovery();
+            Thread.Sleep(10000);
+            Console.WriteLine("Press any kay to exit...");
+            Console.ReadKey();
+        }
 		
 		private static async void DeviceFound (object sender, DeviceEventArgs args)
         {
 			var device = args.Device;
-    			
-			Console.ForegroundColor = ConsoleColor.Green;
-			Console.WriteLine ("Device found");
-			Console.WriteLine ("Type: {0}", device.GetType().Name);
-            Console.ResetColor();
 
-            var ip = await device.GetExternalIPAsync();
+		    var sb = new StringBuilder();
+    		sb.AppendFormat("[Fetching External IP Address]\n");
+		    var ip = await device.GetExternalIPAsync();
+            sb.AppendFormat("IP: {0}  Ok\n", ip);
 
-			Console.WriteLine ("IP: {0}", ip);
-            await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700));
-			Console.WriteLine ("Maped");
+            sb.AppendFormat("[Creating TCP mapping] {0}:1700 -> 127.0.0.1:1600\n", ip);
+            await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700, "Open.Nat Testing"));
+            sb.AppendFormat("[Created] Ok\n", ip);
 
-            var mappings =  await device.GetAllMappingsAsync();
+            sb.AppendFormat("Listing all mappings\n");
+            foreach (var mapping in await device.GetAllMappingsAsync())
+            {
+                sb.AppendFormat("\t" + mapping + Environment.NewLine);
+            }
+
+            sb.AppendFormat("[Removing TCP mapping] {0}:1700 -> 127.0.0.1:1600\n", ip);
+            await device.DeletePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700));
+            sb.AppendFormat("[Removed] Ok\n", ip);
+
+            sb.AppendFormat("Listing all mappings again\n");
+		    var mappings = await device.GetAllMappingsAsync();
             foreach (var mapping in mappings)
             {
-                Console.WriteLine(mapping + Environment.NewLine);
+                sb.AppendFormat("\t" + mapping + Environment.NewLine);
             }
+
+		    var deleted = !mappings.Any(x => x.Description == "Open.Nat Testing");
+            sb.AppendFormat(deleted 
+                ? "[SUCCESS]: Test mapping effectively removed ;)" 
+                : "[FAILURE]: Test mapping wan not removed!");
+            Console.WriteLine(sb.ToString());
         }
 	}
 }

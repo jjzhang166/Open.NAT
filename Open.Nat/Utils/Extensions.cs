@@ -25,6 +25,7 @@
 //
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Xml;
 
@@ -48,6 +49,21 @@ namespace Open.Nat
         internal static bool ContainsIgnoreCase(this string s, string pattern)
         {
             return s.IndexOf(pattern, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        internal static void LogInfo(this TraceSource source, string format, params object[] args)
+        {
+            source.TraceEvent(TraceEventType.Information, 0, format, args);
+        }
+
+        internal static void LogWarn(this TraceSource source, string format, params object[] args)
+        {
+            source.TraceEvent(TraceEventType.Warning, 0, format, args);
+        }
+
+        internal static void LogError(this TraceSource source, string format, params object[] args)
+        {
+            source.TraceEvent(TraceEventType.Error, 0, format, args);
         }
     }
 }
