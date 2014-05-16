@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Open.nat : Lightweight and easy-to-use class library to allow port forwarding in NAT devices with UPNP and/or PMP" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Open.nat</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/lontivero/Open.Nat">View on GitHub</a>
+
+          <h1 id="project_title">Open.nat</h1>
+          <h2 id="project_tagline">Lightweight and easy-to-use class library to allow port forwarding in NAT devices with UPNP and/or PMP</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/lontivero/Open.Nat/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/lontivero/Open.Nat/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="opennat" class="anchor" href="#opennat"><span class="octicon octicon-link"></span></a>Open.Nat</h1>
+
+<p>Open.Nat is a lightweight and easy-to-use class library to allow port forwarding in NAT devices that support  UPNP (Universal Plug &amp; Play) and/or PMP (Port Mapping Protocol). </p>
+
+<h2>
+<a name="goals" class="anchor" href="#goals"><span class="octicon octicon-link"></span></a>Goals</h2>
+
+<p>NATed computers cannot be reached from outside and this is particularly painful for peer-to-peer or friend-to-friend software.
+The main goal is to simplify communication amoung computers behind NAT devices that support UPNP and/or PMP providing a clean and easy interface to get the external IP address and map ports and helping you to achieve peer-to-peer communication. </p>
+
+<h2>
+<a name="example" class="anchor" href="#example"><span class="octicon octicon-link"></span></a>Example</h2>
+
+<div class="highlight highlight-c#"><pre><span class="n">NatUtility</span><span class="p">.</span><span class="n">DeviceFound</span> <span class="p">+=</span> <span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="p">{</span>
+  <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">"It got it!!"</span><span class="p">);</span>
+  <span class="kt">var</span> <span class="n">ip</span> <span class="p">=</span> <span class="k">await</span> <span class="n">device</span><span class="p">.</span><span class="n">GetExternalIPAsync</span><span class="p">();</span>
+  <span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="s">"The external IP Address is: "</span> <span class="p">+</span> <span class="n">ip</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="n">NatUtility</span><span class="p">.</span><span class="n">Initialize</span><span class="p">();</span>
+<span class="n">NatUtility</span><span class="p">.</span><span class="n">StartDiscovery</span><span class="p">();</span>
+</pre></div>
+
+<h2>
+<a name="development" class="anchor" href="#development"><span class="octicon octicon-link"></span></a>Development</h2>
+
+<p>Open.Nat is been developed by <a href="http://geeks.ms/blogs/lontivero">Lucas Ontivero</a> (<a href="http://twitter.com/lontivero">@lontivero</a>). You are welcome to contribute code. You can send code both as a patch or a GitHub pull request.</p>
+
+<h2>
+<a name="build-status" class="anchor" href="#build-status"><span class="octicon octicon-link"></span></a>Build Status</h2>
+
+<p><a href="https://ci.appveyor.com/project/lontivero/open-nat"><img src="https://ci.appveyor.com/api/projects/status/dadcbt26mrlri8cg" alt="Build status"></a></p>
+
+<p><a href="http://badge.fury.io/nu/open.nat"><img src="https://badge.fury.io/nu/open.nat.png" alt="NuGet version"></a></p>
+
+<p>Note that Open.Nat is still very much work in progress. </p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Open.nat maintained by <a href="https://github.com/lontivero">lontivero</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
