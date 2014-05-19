@@ -39,7 +39,7 @@ Build Status
 
 [![NuGet version](https://badge.fury.io/nu/open.nat.png)](http://badge.fury.io/nu/open.nat)
 
-### Version 1.0.15.0
+### Version 1.0.16.0
   *  Discovery performance and bandwidth improved
   *  Tracing improved
   *  Cleaner code
