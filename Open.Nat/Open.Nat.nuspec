@@ -16,5 +16,10 @@
     <language>en-US</language>
     <copyright>Please see LICENSE for more details.</copyright>
     <tags>NAT TRANSVERSAL UPNP PMP PORT FORWARD</tags>
+    <realeaseNotes>
+      Discovery performance and bandwidth improved
+      Tracing improved
+      Cleaner code
+    </realeaseNotes>
   </metadata>
 </package>
