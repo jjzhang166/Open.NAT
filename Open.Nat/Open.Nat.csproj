@@ -65,6 +65,7 @@
     <Compile Include="Pmp\PmpNatDevice.cs" />
     <Compile Include="Searcher.cs" />
     <Compile Include="UpnpSearcher.cs" />
+    <Compile Include="Upnp\DiscoveryResponseMessage.cs" />
     <Compile Include="Upnp\Messages\DiscoverDeviceMessage.cs" />
     <Compile Include="Upnp\Messages\Requests\CreatePortMappingMessage.cs" />
     <Compile Include="Upnp\Messages\Requests\DeletePortMappingMessage.cs" />
@@ -85,6 +86,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Open.Nat.nuspec" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Discovery\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
   <ProjectExtensions>

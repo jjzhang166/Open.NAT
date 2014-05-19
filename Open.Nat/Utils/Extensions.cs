@@ -27,6 +27,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Xml;
 
 namespace Open.Nat
@@ -64,6 +65,38 @@ namespace Open.Nat
         internal static void LogError(this TraceSource source, string format, params object[] args)
         {
             source.TraceEvent(TraceEventType.Error, 0, format, args);
+        }
+
+        internal static string ToPrintableXML(this XmlDocument document)
+        {
+            using(var stream = new MemoryStream())
+            {
+                using (var writer = new XmlTextWriter(stream, Encoding.Unicode))
+                {
+                    try
+                    {
+                        writer.Formatting = Formatting.Indented;
+
+                        document.WriteContentTo(writer);
+                        writer.Flush();
+                        stream.Flush();
+
+                        // Have to rewind the MemoryStream in order to read
+                        // its contents.
+                        stream.Position = 0;
+
+                        // Read MemoryStream contents into a StreamReader.
+                        var reader = new StreamReader(stream);
+
+                        // Extract the text from the StreamReader.
+                        return reader.ReadToEnd();
+                    }
+                    catch (Exception)
+                    {
+                        return document.ToString();
+                    }
+                }
+            }
         }
     }
 }

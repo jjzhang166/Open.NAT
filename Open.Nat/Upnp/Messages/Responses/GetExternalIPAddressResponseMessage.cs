@@ -27,6 +27,7 @@
 //
 
 using System.Net;
+using System.Xml;
 
 namespace Open.Nat
 {
@@ -34,7 +35,7 @@ namespace Open.Nat
     {
         public IPAddress ExternalIPAddress { get; private set; }
 
-        public GetExternalIPAddressResponseMessage(string response, string serviceType)
+        public GetExternalIPAddressResponseMessage(XmlDocument response, string serviceType)
             : base(response, serviceType)
         {
             var ip = GetNode().GetXmlElementText("NewExternalIPAddress");

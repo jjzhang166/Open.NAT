@@ -34,14 +34,18 @@ namespace Open.Nat
         /// The message sent to discover all uPnP devices on the network
         /// </summary>
         /// <returns></returns>
-        public static byte[] Encode()
+        public static string Encode(string serviceType)
         {
             const string s = "M-SEARCH * HTTP/1.1\r\n"
                              + "HOST: 239.255.255.250:1900\r\n"
                              + "MAN: \"ssdp:discover\"\r\n"
                              + "MX: 3\r\n"
-                             + "ST: ssdp:all\r\n\r\n";
-            return Encoding.ASCII.GetBytes(s);
+                            // + "ST: urn:schemas-upnp-org:service:WANIPConnection:1\r\n\r\n";
+                             +"ST: urn:schemas-upnp-org:service:{0}\r\n\r\n";
+                            //+ "ST:upnp:rootdevice\r\n\r\n";
+
+            var ss = string.Format(s, serviceType);
+            return ss;
         }
     }
 }

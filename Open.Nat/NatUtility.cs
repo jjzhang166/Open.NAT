@@ -30,7 +30,6 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Open.Nat
@@ -44,7 +43,7 @@ namespace Open.Nat
         internal static List<ISearcher> Searchers = new List<ISearcher>
         {
               new UpnpSearcher(new IPAddressesProvider())
-            //, new PmpSearcher(new IPAddressesProvider())
+            , new PmpSearcher(new IPAddressesProvider())
         };
 
         public readonly static TraceSource TraceSource = new TraceSource("OpenNat");

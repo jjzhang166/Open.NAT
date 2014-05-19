@@ -43,7 +43,7 @@ namespace Open.Nat
         public string PortMappingDescription { get; private set; }
         public int LeaseDuration { get; private set; }
 
-        public GetGenericPortMappingEntryResponseMessage(string response, string serviceType, bool _genericMapping) 
+        public GetGenericPortMappingEntryResponseMessage(XmlDocument response, string serviceType, bool _genericMapping) 
             : base(response, serviceType)
         {
             var data = GetNode();

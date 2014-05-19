@@ -28,11 +28,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Net;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Threading;
+using System.Xml;
+using Mono.Nat.Upnp;
 
 namespace Open.Nat
 {
@@ -41,6 +45,12 @@ namespace Open.Nat
         private readonly IIPAddressesProvider _ipprovider;
         private readonly IDictionary<Uri, NatDevice> _devices;
 		private readonly Dictionary<IPAddress, DateTime> _lastFetched;
+        private static readonly string[] ServiceTypes = new[]{
+            "WANIPConnection:1", 
+            "WANIPConnection:2", 
+            "WANPPPConnection:1", 
+            "WANPPPConnection:2"
+        };
 
         internal UpnpSearcher(IIPAddressesProvider ipprovider)
         {
@@ -80,13 +90,19 @@ namespace Open.Nat
         {
             NextSearch = DateTime.Now.AddMinutes(5);
 
-            var data = DiscoverDeviceMessage.Encode();
             var searchEndpoint = new IPEndPoint(IPAddress.Broadcast, 1900);
-
-            // UDP is unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
-            for (var i = 0; i < 3; i++)
+            foreach (var serviceType in ServiceTypes)
             {
-                client.Send(data, data.Length, searchEndpoint);
+                var datax = DiscoverDeviceMessage.Encode(serviceType);
+                var data = Encoding.ASCII.GetBytes(datax);
+
+                // UDP is unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
+                // Yes, however it works perfectly well with just 1 request.
+                for (var i = 0; i < 1; i++)
+                {
+                    client.Send(data, data.Length, searchEndpoint);
+                }
+                Thread.Sleep(10);
             }
         }
 
@@ -100,48 +116,29 @@ namespace Open.Nat
             try
             {
                 dataString = Encoding.UTF8.GetString(response);
+                var message = new DiscoveryResponseMessage(dataString);
+                var serviceType = message["ST"];
 
-				//if (NatUtility.Verbose)
                 NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "UPnP Response: {0}", dataString);
 
-                // If this device does not have a WANIPConnection service, then ignore it
-                // Technically i should be checking for WANIPConnection:1 and InternetGatewayDevice:1
-                // but there are some routers missing the '1'.
-                var serviceNames = new[]{
-                    "WANIPConnection:1", 
-                    "WANIPConnection:2", 
-                    "WANPPPConnection:1", 
-                    "WANPPPConnection:2", 
-                    "InternetGatewayDevice:1"
-                };
+                if (!IsValidControllerService(serviceType)) return;
+                NatUtility.TraceSource.LogInfo("UPnP Response: Router advertised a '{0}' service!!!", serviceType);
 
-                var services = from serviceName in serviceNames
-                               let serviceUrn = string.Format("urn:schemas-upnp-org:service:{0}", serviceName)
-                               where dataString.ContainsIgnoreCase(serviceUrn)
-                               select new {ServiceName = serviceName, ServiceUrn = serviceUrn};
+                var location = message["Location"];
+                var locationUri = new Uri(location);
 
-                var service = services.FirstOrDefault();
+                NatUtility.TraceSource.LogInfo("Found device at: {0}", locationUri.ToString());
 
-                if (service == null) return;
-                NatUtility.TraceSource.LogInfo("UPnP Response: Router advertised a '{0}' service!!!", service.ServiceName);
-
-                // We have an internet gateway device now
-                const string locationKey = "Location:";
-                var start = dataString.IndexOf(locationKey, StringComparison.InvariantCultureIgnoreCase) + locationKey.Length;
-                var end = dataString.IndexOf("\n", start, StringComparison.InvariantCultureIgnoreCase);
-                var location = dataString.Substring(start, end - start).Trim();
-
-                var deviceInfo = new UpnpNatDeviceInfo(localAddress, location, service.ServiceUrn);
-
-                if (_devices.ContainsKey(deviceInfo.ServiceDescriptionUri))
+                if (_devices.ContainsKey(locationUri))
                 {
                     // We already have found this device, so we just refresh it to let people know it's
                     // Still alive. If a device doesn't respond to a search, we dump it.
                     NatUtility.TraceSource.LogInfo("Already found - Ignored");
-                    _devices[deviceInfo.ServiceDescriptionUri].Touch();
+                    _devices[locationUri].Touch();
                     return;
                 }
-				// If we send 3 requests at a time, ensure we only fetch the services list once
+
+                // If we send 3 requests at a time, ensure we only fetch the services list once
 				// even if three responses are received
 				if (_lastFetched.ContainsKey(endpoint.Address))
 				{
@@ -151,7 +148,9 @@ namespace Open.Nat
 				}
 				_lastFetched[endpoint.Address] = DateTime.Now;
 
-                NatUtility.TraceSource.LogInfo("{0}: Fetching service list", deviceInfo.HostEndPoint);
+                NatUtility.TraceSource.LogInfo("{0}:{1}: Fetching service list", locationUri.Host, locationUri.Port );
+
+                var deviceInfo = BuildUpnpNatDeviceInfo(localAddress, locationUri);
 
                 FetchDeciceServiceListInfo(deviceInfo);
             }
@@ -165,6 +164,94 @@ namespace Open.Nat
             }
         }
 
+        private static bool IsValidControllerService(string serviceType)
+        {
+            var services = from serviceName in ServiceTypes
+                           let serviceUrn = string.Format("urn:schemas-upnp-org:service:{0}", serviceName)
+                           where serviceType.ContainsIgnoreCase(serviceUrn)
+                           select new {ServiceName = serviceName, ServiceUrn = serviceUrn};
+
+            return services.Any();
+        }
+
+        private UpnpNatDeviceInfo BuildUpnpNatDeviceInfo(IPAddress localAddress, Uri location)
+        {
+            NatUtility.TraceSource.LogInfo("Found device at: {0}", location.ToString());
+
+            var hostEndPoint = new IPEndPoint(IPAddress.Parse(location.Host), location.Port);
+
+            WebResponse response = null;
+            try
+            {
+                var request = WebRequest.CreateHttp(location);
+                request.Headers.Add("ACCEPT-LANGUAGE", "en");
+                request.Method = "GET";
+
+                response = request.GetResponse();
+
+                var httpresponse = response as HttpWebResponse;
+
+                if (httpresponse != null && httpresponse.StatusCode != HttpStatusCode.OK)
+                {
+                    var message = string.Format("Couldn't get services list: {0} {1}", httpresponse.StatusCode, httpresponse.StatusDescription);
+                    throw new Exception(message);
+                }
+
+                var xmldoc = ReadXmlResponse(response);
+
+                NatUtility.TraceSource.LogInfo("{0}: Parsed services list", hostEndPoint);
+
+                var ns = new XmlNamespaceManager(xmldoc.NameTable);
+                ns.AddNamespace("ns", "urn:schemas-upnp-org:device-1-0");
+                var services = xmldoc.SelectNodes("//ns:service", ns);
+
+                foreach (XmlNode service in services)
+                {
+                    var serviceType = service.GetXmlElementText("serviceType");
+                    if (!IsValidControllerService(serviceType)) continue;
+
+                    NatUtility.TraceSource.LogInfo("{0}: Found service: {1}", hostEndPoint, serviceType);
+
+                    var serviceControlUrl = service.GetXmlElementText("controlURL");
+                    NatUtility.TraceSource.LogInfo("{0}: Found upnp service at: {1}", hostEndPoint, serviceControlUrl);
+
+                    NatUtility.TraceSource.LogInfo("{0}: Handshake Complete", hostEndPoint);
+                    return new UpnpNatDeviceInfo(localAddress, location, serviceControlUrl, serviceType);
+                }
+                // NatUtility.TraceSource.LogWarn("No valid control service was found in the service descriptor document");
+                throw new Exception("No valid control service was found in the service descriptor document");
+            }
+            catch (WebException ex)
+            {
+                // Just drop the connection, FIXME: Should i retry?
+                NatUtility.TraceSource.LogError("{0}: Device denied the connection attempt: {1}", hostEndPoint, ex);
+                var inner = ex.InnerException as SocketException;
+                if (inner != null)
+                {
+                    NatUtility.TraceSource.LogError("{0}: ErrorCode:{1}", hostEndPoint, inner.ErrorCode);
+                    NatUtility.TraceSource.LogError("Go to http://msdn.microsoft.com/en-us/library/system.net.sockets.socketerror.aspx");
+                    NatUtility.TraceSource.LogError("Usually this happens. Try resetting the device and try again. If you are in a VPN, disconnect and try again.");
+                }
+                throw;
+            }
+            finally
+            {
+                if (response != null)
+                    response.Close();
+            }
+        }
+
+        private static XmlDocument ReadXmlResponse(WebResponse response)
+        {
+            using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+            {
+                var servicesXml = reader.ReadToEnd();
+                var xmldoc = new XmlDocument();
+                xmldoc.LoadXml(servicesXml);
+                return xmldoc;
+            }
+        }
+
         private void FetchDeciceServiceListInfo(UpnpNatDeviceInfo deviceInfo)
         {
             try
@@ -173,7 +260,7 @@ namespace Open.Nat
                 lock (deviceInfo)
                 {
                     device = new UpnpNatDevice(deviceInfo);
-                    _devices.Add(deviceInfo.ServiceDescriptionUri, device);
+                    _devices.Add(deviceInfo.ServiceControlUri, device);
                 }
                 OnDeviceFound(new DeviceEventArgs(device));
             }

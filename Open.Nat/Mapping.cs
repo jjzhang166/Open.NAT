@@ -29,36 +29,45 @@
 //
 
 using System;
+using System.Net;
 
 namespace Open.Nat
 {
 	public class Mapping
 	{
         public string Description { get; internal set; }
-
+        public IPAddress PrivateIP { get; internal set; }
         public Protocol Protocol { get; internal set; }
-
         public int PrivatePort { get; internal set; }
-
         public int PublicPort { get; internal set; }
-
         public int Lifetime { get; internal set; }
 
         public DateTime Expiration { get; internal set; }
 
-        public Mapping(Protocol protocol, int privatePort, int publicPort)
-			: this (protocol, privatePort, publicPort, 0, "Open.Nat")
+        internal Mapping(Protocol protocol, IPAddress privateIP, int privatePort, int publicPort)
+            : this(protocol, privateIP, privatePort, publicPort, 0, "Open.Nat")
 		{
 		}
 
-        public Mapping(Protocol protocol, int privatePort, int publicPort, string description)
-            : this(protocol, privatePort, publicPort, 0, description)
+        internal Mapping(Protocol protocol, IPAddress privateIP, int privatePort, int publicPort, string description)
+            : this(protocol, privateIP, privatePort, publicPort, 0, description)
         {
         }
-		
-		public Mapping (Protocol protocol, int privatePort, int publicPort, int lifetime, string description)
+
+        public Mapping(Protocol protocol, int privatePort, int publicPort)
+            : this(protocol, IPAddress.None, privatePort, publicPort, 0, "Open.Nat")
+        {
+        }
+
+        public Mapping(Protocol protocol, int privatePort, int publicPort, string description)
+            : this(protocol, IPAddress.None, privatePort, publicPort, 0, description)
+        {
+        }
+
+        internal Mapping(Protocol protocol, IPAddress privateIP, int privatePort, int publicPort, int lifetime, string description)
 		{
 			Protocol = protocol;
+		    PrivateIP = privateIP;
 			PrivatePort = privatePort;
 			PublicPort = publicPort;
 			Lifetime = lifetime;
@@ -82,11 +91,5 @@ namespace Open.Nat
 		{
 			return Expiration < DateTime.Now;
 		}
-
-        public override string ToString( )
-        {
-            return string.Format("Protocol: {0} Public Port: {1} Private Port: {2}  Description: {3} Expiration: {4} Lifetime: {5}", 
-            Protocol, PublicPort, PrivatePort, Description, Expiration, Lifetime );
-        }
 	}
 }

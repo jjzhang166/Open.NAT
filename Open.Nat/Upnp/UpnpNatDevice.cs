@@ -45,7 +45,6 @@ namespace Open.Nat
 		{
             Touch();
             DeviceInfo = deviceInfo;
-            DeviceInfo.UpdateInfo();
             _soapClient = new SoapClient(DeviceInfo.ServiceControlUri, DeviceInfo.ServiceType);
 		}
 
@@ -60,7 +59,7 @@ namespace Open.Nat
         public override async Task CreatePortMapAsync(Mapping mapping)
 		{
             var message = new CreatePortMappingRequestMessage(mapping, DeviceInfo.LocalAddress);
-            await _soapClient.InvokeAsync("AddPortMapping", message.ToXml());
+            var ret = await _soapClient.InvokeAsync("AddPortMapping", message.ToXml());
         }
 
 		public override async Task DeletePortMapAsync(Mapping mapping)
@@ -84,6 +83,7 @@ namespace Open.Nat
                     var responseMessage = new GetGenericPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, true);
 
                     var mapping = new Mapping(responseMessage.Protocol
+                        , IPAddress.Parse(responseMessage.InternalClient)
                         , responseMessage.InternalPort
                         , responseMessage.ExternalPort
                         , responseMessage.LeaseDuration
@@ -110,6 +110,7 @@ namespace Open.Nat
                 var messageResponse = new GetGenericPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, false);
 
                 return new Mapping(messageResponse.Protocol
+                    , IPAddress.Parse(messageResponse.InternalClient)
                     , messageResponse.InternalPort
                     , messageResponse.ExternalPort
                     , messageResponse.LeaseDuration
@@ -118,7 +119,7 @@ namespace Open.Nat
             catch (MappingException e)
             {
                 if (e.ErrorCode != 714) throw;
-                return new Mapping(Protocol.Tcp, -1, -1);
+                return new Mapping(Protocol.Tcp, IPAddress.None, -1, -1);
             }
         }
 
@@ -126,8 +127,8 @@ namespace Open.Nat
         {
             //GetExternalIP is blocking and can throw exceptions, can't use it here.
             return String.Format( 
-                "EndPoint: {0}\nControl Url: {1}\nService Description Url: {2}\nService Type: {3}\nLast Seen: {4}",
-                DeviceInfo.HostEndPoint, DeviceInfo.ServiceControlUri, DeviceInfo.ServiceDescriptionUri, DeviceInfo.ServiceType, LastSeen);
+                "EndPoint: {0}\nControl Url: {1}\nService Type: {2}\nLast Seen: {3}",
+                DeviceInfo.HostEndPoint, DeviceInfo.ServiceControlUri,  DeviceInfo.ServiceType, LastSeen);
         }
 	}
 }

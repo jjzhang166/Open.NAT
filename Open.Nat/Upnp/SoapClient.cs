@@ -25,12 +25,14 @@
 //
 
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections.Generic;
+using System.Xml;
 
 namespace Open.Nat
 {
@@ -45,8 +47,9 @@ namespace Open.Nat
             _serviceType = serviceType;
         }
 
-        public async Task<string> InvokeAsync(string operationName, IDictionary<string, object> args)
+        public async Task<XmlDocument> InvokeAsync(string operationName, IDictionary<string, object> args)
         {
+            NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "SOAPACTION: **{0}** url:{1}", operationName, _url);
             var messageBody = BuildMessageBody(operationName, args);
             var request = BuildHttpWebRequest(operationName, messageBody);
 
@@ -79,10 +82,15 @@ namespace Open.Nat
                 var reader = new StreamReader(stream, Encoding.UTF8);
                 // Read out the content of the message, hopefully picking 
                 // everything up in the case where we have no contentlength
-                return contentLength != 1
-                    ? reader.ReadAsMany((int)contentLength)
-                    : reader.ReadToEnd();
 
+                var responseBody = contentLength != 1
+                                    ? reader.ReadAsMany((int) contentLength)
+                                    : reader.ReadToEnd();
+
+                var responseXml = GetXmlDocument(responseBody);
+                NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "Response: \n{0}", responseXml.ToPrintableXML());
+
+                return responseXml;
             }
             finally
             {
@@ -105,21 +113,46 @@ namespace Open.Nat
         private byte[] BuildMessageBody(string operationName, IEnumerable<KeyValuePair<string, object>> args)
         {
             var sb = new StringBuilder();
-            sb.Append("<s:Envelope ");
-            sb.Append("   xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" ");
-            sb.Append("   s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">");
-            sb.Append("<s:Body>");
-            sb.Append("   <u:" + operationName + " xmlns:u=\"" + _serviceType + "\">");
+            sb.AppendLine("<s:Envelope ");
+            sb.AppendLine("   xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" ");
+            sb.AppendLine("   s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">");
+            sb.AppendLine("   <s:Body>");
+            sb.AppendLine("      <u:" + operationName + " xmlns:u=\"" + _serviceType + "\">");
             foreach (var a in args)
             {
-                sb.Append("<" + a.Key + ">" + Convert.ToString(a.Value, CultureInfo.InvariantCulture) + "</" + a.Key +">");
+                sb.AppendLine("         <" + a.Key + ">" + Convert.ToString(a.Value, CultureInfo.InvariantCulture) + "</" + a.Key + ">");
             }
-            sb.Append("   </u:" + operationName + ">");
-            sb.Append("</s:Body>");
+            sb.AppendLine("      </u:" + operationName + ">");
+            sb.AppendLine("   </s:Body>");
             sb.Append("</s:Envelope>\r\n\r\n");
+            var requestBody = sb.ToString();
 
-            var messageBody = Encoding.UTF8.GetBytes(sb.ToString());
+            NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, requestBody);
+            var messageBody = Encoding.UTF8.GetBytes(requestBody);
             return messageBody;
+        }
+
+        private XmlDocument GetXmlDocument(string response)
+        {
+            XmlNode node;
+            var doc = new XmlDocument();
+            doc.LoadXml(response);
+
+            var nsm = new XmlNamespaceManager(doc.NameTable);
+
+            // Error messages should be found under this namespace
+            nsm.AddNamespace("errorNs", "urn:schemas-upnp-org:control-1-0");
+
+            // Check to see if we have a fault code message.
+            if ((node = doc.SelectSingleNode("//errorNs:UPnPError", nsm)) != null)
+            {
+                var code = Convert.ToInt32(node.GetXmlElementText("errorCode"), CultureInfo.InvariantCulture);
+                var errorMessage = node.GetXmlElementText("errorDescription");
+                NatUtility.TraceSource.LogWarn("Server failed with error: {0} - {1}", code, errorMessage);
+                throw new MappingException(code, errorMessage);
+            }
+
+            return doc;
         }
     }
 }

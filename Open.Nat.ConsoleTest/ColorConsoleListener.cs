@@ -31,8 +31,17 @@ namespace Open.Nat.ConsoleTest
 {
     public class ColorConsoleListener : TraceListener
     {
+        private static object _sync = new object();
+
+        public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string message)
+        {
+            TraceEvent(eventCache, source, eventType, id, message, new object[0]);
+        }
+
         public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string format, params object[] args)
         {
+            lock (_sync)
+            {
             ConsoleColor color;
             switch (eventType)
             {
@@ -57,6 +66,8 @@ namespace Open.Nat.ConsoleTest
             var message = source + " - " + eventTypeString + " > " + string.Format(format, args);
 
             WriteColor(message + Environment.NewLine, color);
+
+            }
         }
  
         public override void Write(string message)
