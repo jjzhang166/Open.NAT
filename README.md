@@ -25,10 +25,11 @@ NatUtility.Initialize();
 NatUtility.StartDiscovery();
 ```
 
+For more info please check the [Wiki](https://github.com/lontivero/Open.Nat/wiki)
 
 Development
 -----------
-Open.Nat is been developed by [Lucas Ontivero](http://geeks.ms/blogs/lontivero) ([@lontivero](http://twitter.com/lontivero)). You are welcome to contribute code. You can send code both as a patch or a GitHub pull request.
+Open.Nat is been developed by [Lucas Ontivero](http://geeks.ms/blogs/lontivero) ([@lontivero](http://twitter.com/lontivero)). You are welcome to contribute code. You can send code both as a patch or a GitHub pull request. 
 
 Build Status
 ------------
@@ -37,5 +38,9 @@ Build Status
 
 [![NuGet version](https://badge.fury.io/nu/open.nat.png)](http://badge.fury.io/nu/open.nat)
 
+### Version 1.0.11.0
+  *  Discovery performance and bandwidth improved
+  *  Tracing improved
+  *  Cleaner code
 
-Note that Open.Nat is still very much work in progress. 
+
