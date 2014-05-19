@@ -17,6 +17,3 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("1.1.0.0")]
 
 [assembly: CLSCompliant(false)]
-[assembly: InternalsVisibleTo("Open.Nat.Tests")]
-[assembly: InternalsVisibleTo("Castle.DynamicProxy2")] 
-[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] 

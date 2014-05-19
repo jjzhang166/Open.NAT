@@ -5,8 +5,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Open.Nat", "Open.Nat\Open.N
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Open.Nat.ConsoleTest", "Open.Nat.ConsoleTest\Open.Nat.ConsoleTest.csproj", "{E92CFA66-F518-4E66-B0BA-76A7808C939A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Open.Nat.Tests", "Open.Nat.Tests\Open.Nat.Tests.csproj", "{8A04E1C3-E262-4709-A5AB-6A1A95473C08}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{87CD0D6D-64C8-4C38-9A75-2036C09BB763}"
 	ProjectSection(SolutionItems) = preProject
 		.nuget\NuGet.Config = .nuget\NuGet.Config
@@ -37,10 +35,6 @@ Global
 		{E92CFA66-F518-4E66-B0BA-76A7808C939A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E92CFA66-F518-4E66-B0BA-76A7808C939A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E92CFA66-F518-4E66-B0BA-76A7808C939A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8A04E1C3-E262-4709-A5AB-6A1A95473C08}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8A04E1C3-E262-4709-A5AB-6A1A95473C08}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8A04E1C3-E262-4709-A5AB-6A1A95473C08}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8A04E1C3-E262-4709-A5AB-6A1A95473C08}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

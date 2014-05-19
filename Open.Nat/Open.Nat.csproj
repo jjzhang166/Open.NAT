@@ -46,6 +46,12 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>Open.Nat.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -86,6 +92,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Open.Nat.nuspec" />
+    <None Include="Open.Nat.snk" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Discovery\" />
