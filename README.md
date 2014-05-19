@@ -1,3 +1,4 @@
+![Logo](https://github.com/lontivero/Open.Nat/raw/gh-pages/images/logos/128.jpg)
 Open.Nat
 ======
 
