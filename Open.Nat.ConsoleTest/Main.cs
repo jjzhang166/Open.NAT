@@ -43,7 +43,6 @@ namespace Open.Nat.ConsoleTest
             NatUtility.StartDiscovery();
 
             Thread.Sleep(5000);
-            Console.WriteLine("Press any kay to exit...");
             Console.ReadKey();
         }
 		
@@ -81,6 +80,7 @@ namespace Open.Nat.ConsoleTest
                 ? "[SUCCESS]: Test mapping effectively removed ;)" 
                 : "[FAILURE]: Test mapping wan not removed!");
             Console.WriteLine(sb.ToString());
+            Console.WriteLine("Press any kay to exit...");
         }
 	}
 }
