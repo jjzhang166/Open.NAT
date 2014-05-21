@@ -113,14 +113,14 @@ namespace Open.Nat
             // Sort out the time for the next search first. The spec says the 
             // timeout should double after each attempt. Once it reaches 64 seconds
             // (and that attempt fails), assume no devices available
-            NextSearch = DateTime.Now.AddMilliseconds(_timeout);
+            NextSearch = DateTime.UtcNow.AddMilliseconds(_timeout);
             _timeout *= 2;
 
             // We've tried 9 times as per spec, try searching again in 5 minutes
             if (_timeout == 128 * 1000)
             {
                 _timeout = 250;
-                NextSearch = DateTime.Now.AddMinutes(10);
+                NextSearch = DateTime.UtcNow.AddMinutes(5);
                 return;
             }
 

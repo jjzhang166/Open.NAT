@@ -116,8 +116,11 @@ namespace Open.Nat
                 var pmpException = e as MappingException;
 				throw new MappingException (message, pmpException);
 			}
-			
-			return mapping;
+
+            if(create) RegisterMapping(mapping); 
+            else UnregisterMapping(mapping);
+
+            return mapping;
 		}
 		
 		private void CreatePortMapListen (UdpClient udpClient, Mapping mapping )

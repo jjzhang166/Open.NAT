@@ -36,10 +36,9 @@ namespace Open.Nat
         private readonly IPAddress _localIpAddress;
         private readonly Mapping _mapping;
 
-        public CreatePortMappingRequestMessage(Mapping mapping, IPAddress localIpAddress) 
+        public CreatePortMappingRequestMessage(Mapping mapping) 
         {
             _mapping = mapping;
-            _localIpAddress = localIpAddress;
         }
 
         public override IDictionary<string, object> ToXml()
@@ -50,7 +49,7 @@ namespace Open.Nat
                     {"NewExternalPort", _mapping.PublicPort},
                     {"NewProtocol", _mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP"},
                     {"NewInternalPort", _mapping.PrivatePort},
-                    {"NewInternalClient", _localIpAddress},
+                    {"NewInternalClient", _mapping.PrivateIP},
                     {"NewEnabled", 1},
                     {"NewPortMappingDescription", _mapping.Description},
                     {"NewLeaseDuration", _mapping.Lifetime}

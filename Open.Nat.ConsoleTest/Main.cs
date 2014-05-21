@@ -38,20 +38,18 @@ namespace Open.Nat.ConsoleTest
 		{
             NatUtility.TraceSource.Switch.Level = SourceLevels.Verbose;
             NatUtility.TraceSource.Listeners.Add(new ColorConsoleListener());
-
             NatUtility.DeviceFound += DeviceFound;
             NatUtility.Initialize();
             NatUtility.StartDiscovery();
 
             Thread.Sleep(5000);
-            NatUtility.StopDiscovery();
-            Thread.Sleep(10000);
             Console.WriteLine("Press any kay to exit...");
             Console.ReadKey();
         }
 		
 		private static async void DeviceFound (object sender, DeviceEventArgs args)
         {
+            NatUtility.StartDiscovery();
 			var device = args.Device;
 		    
 		    var sb = new StringBuilder();
@@ -59,11 +57,8 @@ namespace Open.Nat.ConsoleTest
             sb.AppendFormat("\n\nYour IP: {0}\n", ip);
 
             await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700, "Open.Nat Testing"));
-            //await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, -4, 1700, "Open.Nat Testing"));
-            //await device.DeletePortMapAsync(new Mapping(Protocol.Tcp, -2, 1710));
-            sb.AppendFormat("Added mapping: {0}:1700 -> 127.0.0.1:1600", ip);
+            sb.AppendFormat("Added mapping: {0}:1700 -> 127.0.0.1:1600\n\n", ip);
 
-            sb.AppendFormat("Mapping List\n");
             sb.AppendFormat("+------+-------------------------------+--------------------------------+----------------------------------+\n");
             sb.AppendFormat("| PROT | PUBLIC (Reacheable)           | PRIVATE (Your computer)        | Descriptopn                      |\n");
             sb.AppendFormat("+------+----------------------+--------+-----------------------+--------+----------------------------------+\n");
@@ -78,7 +73,7 @@ namespace Open.Nat.ConsoleTest
 
             sb.AppendFormat("[Removing TCP mapping] {0}:1700 -> 127.0.0.1:1600\n", ip);
             await device.DeletePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700));
-            sb.AppendFormat("[Done]\n", ip);
+            sb.AppendFormat("[Done]\n");
 
 		    var mappings = await device.GetAllMappingsAsync();
 		    var deleted = !mappings.Any(x => x.Description == "Open.Nat Testing");

@@ -88,7 +88,7 @@ namespace Open.Nat
 
         protected override void Search(UdpClient client)
         {
-            NextSearch = DateTime.Now.AddMinutes(5);
+            NextSearch = DateTime.UtcNow.AddMinutes(1);
 
             var searchEndpoint = new IPEndPoint(IPAddress.Broadcast, 1900);
             foreach (var serviceType in ServiceTypes)
@@ -156,11 +156,14 @@ namespace Open.Nat
             }
             catch (Exception ex)
             {
-                NatUtility.TraceSource.LogError("Unhandled exception when trying to decode a device's response Send me the following data: ");
-                NatUtility.TraceSource.LogError("ErrorMessage:");
+                NatUtility.TraceSource.LogError("Unhandled exception when trying to decode a device's response. ");
+                NatUtility.TraceSource.LogError("Report the issue in https://github.com/lontivero/Open.Nat/issues");
+                NatUtility.TraceSource.LogError("Also copy and paste the following info:");
+                NatUtility.TraceSource.LogError("-- beging ---------------------------------");
                 NatUtility.TraceSource.LogError(ex.Message);
                 NatUtility.TraceSource.LogError("Data string:");
                 NatUtility.TraceSource.LogError(dataString ?? "No data available");
+                NatUtility.TraceSource.LogError("-- end ------------------------------------");
             }
         }
 

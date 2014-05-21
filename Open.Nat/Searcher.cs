@@ -87,7 +87,7 @@ namespace Open.Nat
 
         public bool IsSearchTime
         {
-            get { return NextSearch < DateTime.Now; }
+            get { return NextSearch < DateTime.UtcNow; }
         }
     }
 }

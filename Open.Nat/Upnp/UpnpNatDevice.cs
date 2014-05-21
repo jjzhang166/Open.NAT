@@ -30,7 +30,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -57,15 +56,18 @@ namespace Open.Nat
         }
 
         public override async Task CreatePortMapAsync(Mapping mapping)
-		{
-            var message = new CreatePortMappingRequestMessage(mapping, DeviceInfo.LocalAddress);
-            var ret = await _soapClient.InvokeAsync("AddPortMapping", message.ToXml());
+        {
+            mapping.PrivateIP = DeviceInfo.LocalAddress;
+            var message = new CreatePortMappingRequestMessage(mapping);
+            await _soapClient.InvokeAsync("AddPortMapping", message.ToXml());
+            RegisterMapping(mapping);
         }
 
 		public override async Task DeletePortMapAsync(Mapping mapping)
 		{
             var message = new DeletePortMappingRequestMessage(mapping);
             await _soapClient.InvokeAsync("DeletePortMapping", message.ToXml());
+            UnregisterMapping(mapping);
         }
 
 		public override async Task<IEnumerable<Mapping>> GetAllMappingsAsync()

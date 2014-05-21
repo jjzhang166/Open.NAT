@@ -35,8 +35,13 @@ using System.Threading.Tasks;
 
 namespace Open.Nat
 {
+    /// <summary>
+    /// Represents a NAT device and provides access to the operation set that allows
+    /// open (forward) ports, close ports and get the externa (visible) IP address.
+    /// </summary>
 	public abstract class NatDevice
-	{
+    {
+        private readonly List<Mapping> _openMapping = new List<Mapping>();
 	    protected DateTime LastSeen { get; private set; }
 
         internal void Touch()
@@ -44,11 +49,97 @@ namespace Open.Nat
             LastSeen = DateTime.Now;
         }
 
+        /// <summary>
+        /// Creates the port map asynchronous.
+        /// </summary>
+        /// <param name="mapping">The <see cref="Mapping">Mapping</see> entry.</param>
+        /// <example>
+        /// device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1700, 1600));
+        /// </example>
+        /// <exception cref="MappingException">MappingException</exception>
         public abstract Task CreatePortMapAsync(Mapping mapping);
+        /// <summary>
+        /// Deletes a mapped port asynchronous.
+        /// </summary>
+        /// <param name="mapping">The <see cref="Mapping">Mapping</see> entry.</param>
+        /// <example>
+        /// device.DeletePortMapAsync(new Mapping(Protocol.Tcp, 1700, 1600));
+        /// </example>
+        /// <exception cref="MappingException">MappingException</exception>
         public abstract Task DeletePortMapAsync(Mapping mapping);
-        
+
+        /// <summary>
+        /// Gets all mappings asynchronous.
+        /// </summary>
+        /// <returns>
+        /// The list of all forwarded ports
+        /// </returns>
+        /// <example>
+        /// var mappings = await device.GetAllMappingsAsync();
+        /// foreach(var mapping in mappings)
+        /// {
+        ///     Console.WriteLine(mapping)
+        /// }
+        /// </example>
+        /// <exception cref="MappingException">MappingException</exception>
         public abstract Task<IEnumerable<Mapping>> GetAllMappingsAsync();
+        /// <summary>
+        /// Gets the external (visible) IP address asynchronous. This is the NAT device IP address
+        /// </summary>
+        /// <returns>
+        /// The public IP addrees
+        /// </returns>
+        /// <example>
+        /// Console.WriteLine("My public IP is: {0}", await device.GetExternalIPAsync());
+        /// </example>
+        /// <exception cref="MappingException">MappingException</exception>
         public abstract Task<IPAddress> GetExternalIPAsync();
+        /// <summary>
+        /// Gets the specified mapping asynchronous.
+        /// </summary>
+        /// <param name="protocol">The protocol.</param>
+        /// <param name="port">The port.</param>
+        /// <returns>
+        /// The matching mapping
+        /// </returns>
         public abstract Task<Mapping> GetSpecificMappingAsync(Protocol protocol, int port);
+
+        protected void RegisterMapping(Mapping mapping)
+        {
+            _openMapping.Add(mapping);    
+        }
+
+        protected void UnregisterMapping(Mapping mapping)
+        {
+            _openMapping.Remove(mapping);
+        }
+
+        internal void ReleaseAll()
+        {
+            var mapCount = _openMapping.Count;
+            NatUtility.TraceSource.LogInfo("{0} ports to close", mapCount);
+            for (var i = 0; i < mapCount; i++)
+            {
+                var mapping = _openMapping[i];
+                var log = string.Format("{0} {1} --> {2}:{3} ({4}) port",
+                    mapping.Protocol == Protocol.Udp ? "Tcp" : "Udp",
+                    mapping.PublicPort,
+                    mapping.PrivateIP,
+                    mapping.PrivatePort,
+                    mapping.Description);
+
+                try
+                {
+                    DeletePortMapAsync(mapping);
+                    NatUtility.TraceSource.LogInfo( log + " successfully closed"); 
+                }
+                catch(Exception e)
+                {
+                    NatUtility.TraceSource.LogError( log + " couldn't be close");
+                    NatUtility.TraceSource.LogError(e.ToString());
+                }
+            }
+            _openMapping.Clear();
+        }
 	}
 }
