@@ -28,6 +28,11 @@ NatUtility.StartDiscovery();
 
 For more info please check the [Wiki](https://github.com/lontivero/Open.Nat/wiki)
 
+Documentation
+-------------
+
+[Visit the Wiki page](https://github.com/lontivero/Open.Nat/wiki)
+
 Development
 -----------
 Open.Nat is been developed by [Lucas Ontivero](http://geeks.ms/blogs/lontivero) ([@lontivero](http://twitter.com/lontivero)). You are welcome to contribute code. You can send code both as a patch or a GitHub pull request. 
@@ -38,6 +43,13 @@ Build Status
 [![Build status](https://ci.appveyor.com/api/projects/status/dadcbt26mrlri8cg)](https://ci.appveyor.com/project/lontivero/open-nat)
 
 [![NuGet version](https://badge.fury.io/nu/open.nat.png)](http://badge.fury.io/nu/open.nat)
+
+### Version 1.0.17.0
+  *  Discovery timeout added.
+  *  Auto release ports opened in the session.
+  *  Fix NextSearch to use UtcNow (also performance)
+  *  Fix LocalIP property after add a port.
+  *  Tracing improvements
 
 ### Version 1.0.16.0
   *  Discovery performance and bandwidth improved

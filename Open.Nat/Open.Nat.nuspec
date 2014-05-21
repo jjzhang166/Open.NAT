@@ -17,9 +17,11 @@
     <copyright>Please see LICENSE for more details.</copyright>
     <tags>NAT TRANSVERSAL UPNP PMP PORT FORWARD</tags>
     <releaseNotes>
-      Discovery performance and bandwidth improved
-      Tracing improved
-      Cleaner code
+      Discovery timeout added.
+      Auto release ports opened in the session.
+      Fix NextSearch to use UtcNow (also performance)
+      Fix LocalIP property after add a port.
+      Tracing improvements
     </releaseNotes>
   </metadata>
 </package>
