@@ -90,7 +90,7 @@ namespace Open.Nat
         {
             NextSearch = DateTime.UtcNow.AddMinutes(1);
 
-            var searchEndpoint = new IPEndPoint(IPAddress.Broadcast, 1900);
+            var searchEndpoint = new IPEndPoint(WellKnownConstants.IPv4MulticastAddress /*IPAddress.Broadcast*/, 1900);
             foreach (var serviceType in ServiceTypes)
             {
                 var datax = DiscoverDeviceMessage.Encode(serviceType);
@@ -98,7 +98,7 @@ namespace Open.Nat
 
                 // UDP is unreliable, so send 3 requests at a time (per Upnp spec, sec 1.1.2)
                 // Yes, however it works perfectly well with just 1 request.
-                for (var i = 0; i < 1; i++)
+                for (var i = 0; i < 2; i++)
                 {
                     client.Send(data, data.Length, searchEndpoint);
                 }
@@ -260,10 +260,13 @@ namespace Open.Nat
             try
             {
                 UpnpNatDevice device;
-                lock (deviceInfo)
+                lock (_devices)
                 {
                     device = new UpnpNatDevice(deviceInfo);
-                    _devices.Add(deviceInfo.ServiceControlUri, device);
+                    if (!_devices.ContainsKey(deviceInfo.ServiceControlUri))
+                    {
+                        _devices.Add(deviceInfo.ServiceControlUri, device);
+                    }
                 }
                 OnDeviceFound(new DeviceEventArgs(device));
             }

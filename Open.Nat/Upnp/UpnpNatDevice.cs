@@ -40,7 +40,7 @@ namespace Open.Nat
 	    internal readonly UpnpNatDeviceInfo DeviceInfo;
         private readonly SoapClient _soapClient;
 
-		internal UpnpNatDevice (UpnpNatDeviceInfo deviceInfo)
+        internal UpnpNatDevice (UpnpNatDeviceInfo deviceInfo)
 		{
             Touch();
             DeviceInfo = deviceInfo;
@@ -50,7 +50,10 @@ namespace Open.Nat
 		public override async Task<IPAddress> GetExternalIPAsync()
 	    {
             var message = new GetExternalIPAddressRequestMessage();
-            var responseData = await _soapClient.InvokeAsync("GetExternalIPAddress", message.ToXml());
+            var responseData = await _soapClient
+                .InvokeAsync("GetExternalIPAddress", message.ToXml())
+                .TimeoutAfter(TimeSpan.FromSeconds(4));
+
             var response = new GetExternalIPAddressResponseMessage(responseData, DeviceInfo.ServiceType);
             return response.ExternalIPAddress;
         }
@@ -58,15 +61,50 @@ namespace Open.Nat
         public override async Task CreatePortMapAsync(Mapping mapping)
         {
             mapping.PrivateIP = DeviceInfo.LocalAddress;
-            var message = new CreatePortMappingRequestMessage(mapping);
-            await _soapClient.InvokeAsync("AddPortMapping", message.ToXml());
-            RegisterMapping(mapping);
+            CreatePortMappingRequestMessage message;
+            try
+            {
+                message = new CreatePortMappingRequestMessage(mapping);
+                await _soapClient
+                    .InvokeAsync("AddPortMapping", message.ToXml())
+                    .TimeoutAfter(TimeSpan.FromSeconds(4));
+                RegisterMapping(mapping);
+            }
+            catch(MappingException me)
+            {
+                switch (me.ErrorCode)
+                {
+                    case UpnpConstants.OnlyPermanentLeasesSupported:
+                        NatUtility.TraceSource.LogWarn("Only Permanent Leases Supported - There is no warranty it will be closed");
+                        mapping.Lifetime = 0;
+                        break;
+                    case UpnpConstants.SamePortValuesRequired:
+                        NatUtility.TraceSource.LogWarn("Same Port Values Required - Using internal port {0}", mapping.PrivatePort);
+                        mapping.PublicPort = mapping.PrivatePort;
+                        break;
+                    case UpnpConstants.RemoteHostOnlySupportsWildcard:
+                        NatUtility.TraceSource.LogWarn("Remote Host Only Supports Wildcard");
+                        mapping.PublicIP = IPAddress.None;
+                        break;
+                    //case UpnpConstants.ExternalPortOnlySupportsWildcard:
+                    //    NatUtility.TraceSource.LogWarn("External Port Only Supports Wildcard");
+                    //    break;
+                }
+                message = new CreatePortMappingRequestMessage(mapping);
+                _soapClient
+                    .InvokeAsync("AddPortMapping", message.ToXml())
+                    .TimeoutAfter(TimeSpan.FromSeconds(4));
+                RegisterMapping(mapping);
+            }
         }
 
 		public override async Task DeletePortMapAsync(Mapping mapping)
 		{
             var message = new DeletePortMappingRequestMessage(mapping);
-            await _soapClient.InvokeAsync("DeletePortMapping", message.ToXml());
+            await _soapClient
+                .InvokeAsync("DeletePortMapping", message.ToXml())
+                .TimeoutAfter(TimeSpan.FromSeconds(4));
+
             UnregisterMapping(mapping);
         }
 
@@ -81,7 +119,10 @@ namespace Open.Nat
                 {
                     var message = new GetGenericPortMappingEntry(index);
 
-                    var responseData = await _soapClient.InvokeAsync("GetGenericPortMappingEntry", message.ToXml());
+                    var responseData = await _soapClient
+                        .InvokeAsync("GetGenericPortMappingEntry", message.ToXml())
+                        .TimeoutAfter(TimeSpan.FromSeconds(4));
+
                     var responseMessage = new GetGenericPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, true);
 
                     var mapping = new Mapping(responseMessage.Protocol
@@ -108,7 +149,10 @@ namespace Open.Nat
             try
             {
                 var message = new GetSpecificPortMappingEntryRequestMessage(protocol, port);
-                var responseData = await _soapClient.InvokeAsync("GetSpecificPortMappingEntry", message.ToXml());
+                var responseData = await _soapClient
+                    .InvokeAsync("GetSpecificPortMappingEntry", message.ToXml())
+                    .TimeoutAfter(TimeSpan.FromSeconds(4));
+
                 var messageResponse = new GetGenericPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, false);
 
                 return new Mapping(messageResponse.Protocol

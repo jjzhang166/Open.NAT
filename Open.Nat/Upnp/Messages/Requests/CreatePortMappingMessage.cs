@@ -43,9 +43,13 @@ namespace Open.Nat
 
         public override IDictionary<string, object> ToXml()
         {
+            var remoteHost = _mapping.PublicIP.Equals(IPAddress.None)
+                    ? string.Empty
+                    : _mapping.PublicIP.ToString();
+
             return new Dictionary<string, object>
                 {
-                    {"NewRemoteHost", string.Empty},
+                    {"NewRemoteHost", remoteHost },
                     {"NewExternalPort", _mapping.PublicPort},
                     {"NewProtocol", _mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP"},
                     {"NewInternalPort", _mapping.PrivatePort},

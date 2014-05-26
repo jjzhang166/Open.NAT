@@ -55,20 +55,20 @@ namespace Open.Nat.ConsoleTest
 		    var ip = await device.GetExternalIPAsync();
             sb.AppendFormat("\n\nYour IP: {0}\n", ip);
 
-            await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700, "Open.Nat Testing"));
+            await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700, 10000, "Open.Nat Testing"));
             sb.AppendFormat("Added mapping: {0}:1700 -> 127.0.0.1:1600\n\n", ip);
 
-            sb.AppendFormat("+------+-------------------------------+--------------------------------+----------------------------------+\n");
-            sb.AppendFormat("| PROT | PUBLIC (Reacheable)           | PRIVATE (Your computer)        | Descriptopn                      |\n");
-            sb.AppendFormat("+------+----------------------+--------+-----------------------+--------+----------------------------------+\n");
-            sb.AppendFormat("|      | IP Address           | Port   | IP Address            | Port   |                                  |\n");
-            sb.AppendFormat("+------+----------------------+--------+-----------------------+--------+----------------------------------+\n");
+            sb.AppendFormat("+------+-------------------------------+--------------------------------+------------------------------------+-------------------------+\n");
+            sb.AppendFormat("| PROT | PUBLIC (Reacheable)           | PRIVATE (Your computer)        | Descriptopn                        |                         |\n");
+            sb.AppendFormat("+------+----------------------+--------+-----------------------+--------+------------------------------------+-------------------------+\n");
+            sb.AppendFormat("|      | IP Address           | Port   | IP Address            | Port   |                                    | Expires                 |\n");
+            sb.AppendFormat("+------+----------------------+--------+-----------------------+--------+------------------------------------+-------------------------+\n");
             foreach (var mapping in await device.GetAllMappingsAsync())
             {
-                sb.AppendFormat("|  {5} | {0,-20} | {1,6} | {2,-21} | {3,6} | {4,-33}|\n", 
-                    ip, mapping.PublicPort, mapping.PrivateIP, mapping.PrivatePort, mapping.Description, mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP");
+                sb.AppendFormat("|  {5} | {0,-20} | {1,6} | {2,-21} | {3,6} | {4,-35}|{6,25}|\n", 
+                    ip, mapping.PublicPort, mapping.PrivateIP, mapping.PrivatePort, mapping.Description, mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP", mapping.Expiration);
             }
-            sb.AppendFormat("+------+----------------------+--------+-----------------------+--------+----------------------------------+\n");
+            sb.AppendFormat("+------+----------------------+--------+-----------------------+--------+------------------------------------+-------------------------+\n");
 
             sb.AppendFormat("[Removing TCP mapping] {0}:1700 -> 127.0.0.1:1600\n", ip);
             await device.DeletePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700));

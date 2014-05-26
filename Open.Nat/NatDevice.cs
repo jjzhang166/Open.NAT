@@ -30,6 +30,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -65,7 +66,7 @@ namespace Open.Nat
         /// <example>
         /// device.DeletePortMapAsync(new Mapping(Protocol.Tcp, 1700, 1600));
         /// </example>
-        /// <exception cref="MappingException">MappingException</exception>
+        /// <exception cref="MappingException">MappingException-class</exception>
         public abstract Task DeletePortMapAsync(Mapping mapping);
 
         /// <summary>
@@ -121,25 +122,44 @@ namespace Open.Nat
             for (var i = 0; i < mapCount; i++)
             {
                 var mapping = _openMapping[i];
-                var log = string.Format("{0} {1} --> {2}:{3} ({4}) port",
-                    mapping.Protocol == Protocol.Udp ? "Tcp" : "Udp",
-                    mapping.PublicPort,
-                    mapping.PrivateIP,
-                    mapping.PrivatePort,
-                    mapping.Description);
 
                 try
                 {
                     DeletePortMapAsync(mapping);
-                    NatUtility.TraceSource.LogInfo( log + " successfully closed"); 
+                    NatUtility.TraceSource.LogInfo( mapping + " port successfully closed"); 
                 }
-                catch(Exception e)
+                catch(Exception)
                 {
-                    NatUtility.TraceSource.LogError( log + " couldn't be close");
-                    NatUtility.TraceSource.LogError(e.ToString());
+                    NatUtility.TraceSource.LogError( mapping + " port couldn't be close");
                 }
             }
             _openMapping.Clear();
         }
-	}
+
+        internal void RenewMappings()
+        {
+            var mappings = _openMapping.Where(x => x.ShoundRenew());
+            foreach (var mapping in mappings)
+            {
+                RenewMapping(mapping);
+            }
+        }
+
+        private void RenewMapping(Mapping mapping)
+        {
+            try
+            {
+                mapping.Expiration = DateTime.UtcNow.AddMinutes(10);
+
+                NatUtility.TraceSource.LogInfo("Renewing mapping {0}", mapping);
+                CreatePortMapAsync(mapping);
+                NatUtility.TraceSource.LogInfo("Next renew scheduled at: {0}", mapping.Expiration.ToLocalTime().TimeOfDay);
+
+            }
+            catch (Exception)
+            {
+                NatUtility.TraceSource.LogInfo("Renew {0} failed", mapping);
+            }
+        }
+    }
 }

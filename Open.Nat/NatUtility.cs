@@ -35,6 +35,24 @@ using System.Threading.Tasks;
 namespace Open.Nat
 {
     /// <summary>
+    /// Protocol that should be used for searching a NAT device. 
+    /// </summary>
+    public enum PortMapper
+    {
+        /// <summary>
+        /// Use only Port Mapping Protocol
+        /// </summary>
+        Pmp,
+        /// <summary>
+        /// Use only Universal Plug and Play
+        /// </summary>
+        Upnp,
+        /// <summary>
+        /// User both, Port Mapping Protocol and Universal Plug and Play
+        /// </summary>
+        Both
+    }
+    /// <summary>
     /// 
     /// </summary>
 	public static class NatUtility
@@ -42,22 +60,40 @@ namespace Open.Nat
         private static readonly List<NatDevice> Devices = new List<NatDevice>();
         private static readonly Finalizer Finalizer = new Finalizer();
         private static readonly ManualResetEvent Searching;
+        private static readonly Searcher UpnpSearcher = new UpnpSearcher(new IPAddressesProvider());
+        private static readonly Searcher PmpSearcher = new PmpSearcher(new IPAddressesProvider());
+        
         private static int _discoveryTimeout;
-
-        internal static List<ISearcher> Searchers = new List<ISearcher>
-        {
-             new UpnpSearcher(new IPAddressesProvider()),
-             new PmpSearcher(new IPAddressesProvider())
-        };
-
+        internal static readonly Timer RenewTimer = new Timer(RenewMappings, null, 1000, 30000);
         internal static DateTime DiscoveryTime { get; set; }
 
+        /// <summary>
+        /// Specifies if ports opened by Open.NAT should be closed as part of the
+        /// process shutdown. All mappings will be released except those created as permanet.
+        /// A permanent mapping can be created with Mapping.Lifetime=0. They will also be created 
+        /// when the router only support Permanent mappings.
+        /// Default: true
+        /// </summary>
+        public static bool ReleaseOnShutdown { get; set; }
+
+        /// <summary>
+        /// Specifies the protocol that should be used for searching a NAT device. <see cref="PortMapper">PortMapper enum</see>
+        /// For example, if the value is Upnp, the discovery process will search only for Upnp devices.
+        /// </summary>
+        public static PortMapper PortMapper { get; set; } 
+
+        /// <summary>
+        /// Specifies the maximun time (in milliseconds) that the discovery process can run before stop and fail. Searching timeout
+        /// are notified using event <see cref="#DiscoveryTimeout">DiscoveryTimeout</see>
+        /// Default: 5000 (5 seconds)
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">if value is less or equal to 0.</exception>
         public static int DiscoveryTimeout 
         { 
             get { return _discoveryTimeout; }
             set
             {
-                if(value <= 0) throw new ArgumentOutOfRangeException("SearchTimeout must be greater than 0");
+                if(value <= 0) throw new ArgumentOutOfRangeException("value", "SearchTimeout must be greater than 0");
                 _discoveryTimeout = value;
             }
         }
@@ -82,6 +118,19 @@ namespace Open.Nat
         /// </remarks>
 		public static event EventHandler<DeviceEventArgs> DeviceFound;
 
+        /// <summary>
+        /// Occurs when a NAT device is not found before the elapsed time specified by <see cref="#DiscoveryTimeout">DiscoveryTimeout</see>
+        /// </summary>
+        /// <example>
+        /// NatUtility.DiscoveryTimedout += (s, e)=>
+        ///     Console.WriteLine("No NAT device found after {0} milliseconds", NatUtility.DiscoveryTimeout);
+        /// </example>
+        /// <remarks>
+        /// Before to raise this event Open.NAT stops the discovery process. Developers can increase the 
+        /// <see cref="#DiscoveryTimeout">DiscoveryTimeout</see> value and try again restarting the discovery with
+        /// <see cref="#StartDiscovery">StartDiscovery</see> method.
+        /// </remarks>
+        public static event EventHandler<DiscoveryTimeoutEventArgs> DiscoveryTimedout;
 
         /// <summary>
         /// Occurs when occurs an exception that was not expected <see cref="http://msdn.microsoft.com/en-us/library/system.unhandledexceptioneventargs(v=vs.110).aspx"/>
@@ -91,7 +140,7 @@ namespace Open.Nat
         ///     Console.WriteLine("Houston we have a problem: {0}", e.ExceptionObject);
         /// </example>
         /// <remarks>
-        /// This event should never be raised except for really exceptional situations and this only thrown
+        /// This event should never be raised except for really exceptional situations and this iis only thrown
         /// while in the discovery stage.
         /// </remarks>
         public static event EventHandler<UnhandledExceptionEventArgs> UnhandledException;
@@ -115,19 +164,31 @@ namespace Open.Nat
 
         static NatUtility()
         {
+            PortMapper = PortMapper.Both;
+            ReleaseOnShutdown = true;
             Searching = new ManualResetEvent(false);
-            DiscoveryTimeout = 4000;
+            DiscoveryTimeout = 5000;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public static void Initialize()
         {
             TraceSource.LogInfo("Initializing");
-            foreach (var searcher in Searchers)
-            {
-                searcher.DeviceFound += OnDeviceFound;
-            }
 
-            Task.Factory.StartNew(SearchAndListen, TaskCreationOptions.LongRunning);
+            var task = Task.Factory.StartNew(SearchAndListen, TaskCreationOptions.LongRunning);
+            task.ContinueWith(o =>
+                {
+                    var exceptionType = task.Exception.GetType();
+                    if (exceptionType == typeof(TimeoutException) && DiscoveryTimedout != null)
+                    {
+                        DiscoveryTimedout(typeof (NatUtility), new DiscoveryTimeoutEventArgs());
+                        return;
+                    }
+                    if (UnhandledException != null)
+                        UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(task.Exception, false));
+                }, TaskContinuationOptions.OnlyOnFaulted);
         }
 
         /// <summary>
@@ -135,7 +196,7 @@ namespace Open.Nat
         /// </summary>
         /// <remarks>
         /// Once started, it continues searching for NAT devices and never stops. It has to be stopped
-        /// invoking <see cref="StopDiscovery">StopDiscovery</see>. It is a good idea to let it run for a 
+        /// invoking <see cref="#StopDiscovery">StopDiscovery</see>. It is a good idea to let it run for a 
         /// couple of seconds before to stop it.
         /// </remarks>
 		public static void StartDiscovery ()
@@ -161,34 +222,40 @@ namespace Open.Nat
 
         private static void SearchAndListen()
         {
+            var searchers = new List<Searcher>();
+            if (PortMapper == PortMapper.Pmp || PortMapper == PortMapper.Both)
+                searchers.Add(PmpSearcher);
+
+            if (PortMapper == PortMapper.Upnp || PortMapper == PortMapper.Both)
+                searchers.Add(UpnpSearcher);
+
+            foreach (var searcher in searchers)
+            {
+                searcher.DeviceFound += OnDeviceFound;
+            }
+
             TraceSource.LogInfo("Searching");
             while (true)
             {
-                if (CheckSearchTimeout()) return;
-                try
+//#if(!DEBUG)
+                CheckSearchTimeout();
+//#endif
+                foreach (var searcher in searchers)
                 {
-                    foreach (var searcher in Searchers)
-                    {
-                        Searching.WaitOne();
-                        searcher.Receive();
-                    }
-
-                    foreach (var searcher in Searchers)
-                    {
-                        Searching.WaitOne();
-                        searcher.Search();
-                    }
+                    Searching.WaitOne();
+                    searcher.Receive();
                 }
-                catch (Exception e)
+
+                foreach (var searcher in searchers)
                 {
-                    if (UnhandledException != null)
-                        UnhandledException(typeof(NatUtility), new UnhandledExceptionEventArgs(e, false));
+                    Searching.WaitOne();
+                    searcher.Search();
                 }
                 Thread.Sleep(10);
             }
         }
 
-        private static bool CheckSearchTimeout()
+        private static void CheckSearchTimeout()
         {
             var milliseconds = (DateTime.UtcNow - DiscoveryTime).TotalMilliseconds;
 
@@ -198,12 +265,11 @@ namespace Open.Nat
                 if (Devices.Count == 0)
                 {
                     TraceSource.LogWarn(
-                        "No devices found which means that the network is broken or there is no UPnP capable router");
+                        "No devices found which means that the network is broken or there is no UPnP/PMP capable router");
                 }
                 StopDiscovery();
-                return true;
+                throw new TimeoutException("SearchTimeout");
             }
-            return false;
         }
 
         private static void OnDeviceFound(object sender, DeviceEventArgs args)
@@ -224,21 +290,28 @@ namespace Open.Nat
             }
         }
 
+        /// <summary>
+        /// Release all ports opened by Open.NAT. 
+        /// </summary>
+        /// <remarks>
+        /// If ReleaseOnShutdown value is true, it release all the mappings created through the library.
+        /// </remarks>
         public static void ReleaseAll()
         {
+            if(!ReleaseOnShutdown) return;
             foreach (var device in Devices)
             {
                 device.ReleaseAll();
             }
         }
-	}
 
-    sealed class Finalizer 
-    {
-        ~Finalizer() 
+
+        private static void RenewMappings(object state)
         {
-            NatUtility.TraceSource.LogInfo("Closing ports opened in this session");
-            NatUtility.ReleaseAll();
+            foreach (var device in Devices)
+            {
+                device.RenewMappings();
+            }
         }
-    }
+	}
 }

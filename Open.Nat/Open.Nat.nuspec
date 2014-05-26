@@ -17,6 +17,16 @@
     <copyright>Please see LICENSE for more details.</copyright>
     <tags>NAT TRANSVERSAL UPNP PMP PORT FORWARD</tags>
     <releaseNotes>
+      **1.0.18**
+      Discovery timeout raises an event.
+      Permanent mappings are created when NAT only supports that kind of mappings.
+      Protocol to use in discovery process can be specified.
+      Automatic renew port mappings before expiration.
+      Add operations timeout after 4 seconds.
+      Add parameters validation in Mapping class.
+      Fix UnhandledException event was never raised.
+      
+      **1.0.17**
       Discovery timeout added.
       Auto release ports opened in the session.
       Fix NextSearch to use UtcNow (also performance)

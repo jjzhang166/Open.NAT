@@ -1,4 +1,4 @@
-﻿//
+//
 // Authors:
 //   Lucas Ontivero lucasontivero@gmail.com 
 //
@@ -23,32 +23,14 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Mono.Nat.Upnp
+namespace Open.Nat
 {
-    class DiscoveryResponseMessage
+    internal static class UpnpConstants
     {
-        private IDictionary<string, string> _headers;
+        public const int SamePortValuesRequired = 724;
+        public const int OnlyPermanentLeasesSupported = 725;
+        public const int RemoteHostOnlySupportsWildcard = 726;
+        public const int ExternalPortOnlySupportsWildcard = 727;
 
-        public DiscoveryResponseMessage(string message)
-        {
-            var lines = message.Split(new[]{"\r\n"}, StringSplitOptions.RemoveEmptyEntries);
-            var headers = from h in lines.Skip(1)
-                    let c = h.Split(':')
-                    let key = c[0]
-                    let value = c.Length > 1 
-                        ? string.Join(":", c.Skip(1)) 
-                        : string.Empty 
-                    select new {Key = key, Value = value.Trim()};
-            _headers = headers.ToDictionary(x => x.Key, x=>x.Value);
-        }
-
-        public string this[string key]
-        {
-            get { return _headers[key]; }
-        }
     }
 }

@@ -59,6 +59,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EventArgs\DiscoveryTimeoutEventArgs.cs" />
+    <Compile Include="Finalizer.cs" />
     <Compile Include="NatDevice.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Enums\ProtocolType.cs" />
@@ -79,11 +81,12 @@
     <Compile Include="Upnp\Messages\Requests\GetExternalIPAddressMessage.cs" />
     <Compile Include="Upnp\Messages\Requests\GetGenericPortMappingEntry.cs" />
     <Compile Include="Upnp\Messages\Requests\GetSpecificPortMappingEntryMessage.cs" />
-    <Compile Include="Upnp\Messages\ResponseMessageBase.cs" />
+    <Compile Include="Upnp\ResponseMessageBase.cs" />
     <Compile Include="Upnp\Messages\Responses\GetExternalIPAddressResponseMessage.cs" />
     <Compile Include="Upnp\Messages\Responses\GetGenericPortMappingEntryResponseMessage.cs" />
-    <Compile Include="Upnp\Messages\RequestMessageBase.cs" />
+    <Compile Include="Upnp\RequestMessageBase.cs" />
     <Compile Include="Upnp\SoapClient.cs" />
+    <Compile Include="Upnp\UpnpConstants.cs" />
     <Compile Include="Upnp\UpnpNatDeviceInfo.cs" />
     <Compile Include="Upnp\UpnpNatDevice.cs" />
     <Compile Include="Utils\Extensions.cs" />

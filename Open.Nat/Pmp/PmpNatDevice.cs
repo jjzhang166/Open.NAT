@@ -48,13 +48,15 @@ namespace Open.Nat
 		}
 
         public override async Task CreatePortMapAsync(Mapping mapping)
-		{
-			await CreatePortMapAsync(mapping, true);
-		}
+        {
+            await CreatePortMapAsync(mapping, true)
+                .TimeoutAfter(TimeSpan.FromSeconds(4));
+        }
 
 		public override async Task DeletePortMapAsync (Mapping mapping)
 		{
-            await CreatePortMapAsync(mapping, false);
+            await CreatePortMapAsync(mapping, false)
+                .TimeoutAfter(TimeSpan.FromSeconds(4));
 		}
 
 		public override Task<IEnumerable<Mapping>> GetAllMappingsAsync ()
@@ -64,7 +66,8 @@ namespace Open.Nat
 
 		public override Task<IPAddress> GetExternalIPAsync ()
 		{
-		    return Task.Run(() => _publicAddress);
+		    return Task.Run(() => _publicAddress)
+                .TimeoutAfter(TimeSpan.FromSeconds(4));
 		}
 
 		public override Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int port)
