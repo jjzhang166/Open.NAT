@@ -32,11 +32,20 @@ using System.Security.Permissions;
 
 namespace Open.Nat
 {
+	/// <summary>
+	/// 
+	/// </summary>
 	[Serializable]
 	public class MappingException : Exception
 	{
+	    /// <summary>
+	    /// 
+	    /// </summary>
 	    public int ErrorCode { get; private set; }
 
+	    /// <summary>
+	    /// 
+	    /// </summary>
 	    public string ErrorText { get; private set; }
 
 	    #region Constructors

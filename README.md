@@ -1,4 +1,5 @@
 ![Logo](https://github.com/lontivero/Open.Nat/raw/gh-pages/images/logos/128.jpg)
+
 Open.Nat
 ======
 
@@ -14,6 +15,7 @@ The main goal is to simplify communication amoung computers behind NAT devices t
 Example
 --------
 
+The simplest scenario:
 
 ```c#
 NatUtility.DeviceFound += (sender, args) => {
@@ -26,12 +28,33 @@ NatUtility.Initialize();
 NatUtility.StartDiscovery();
 ```
 
+The following piece of code shows a common scenario: It blocks the execution until it discovers a NAT-UPNP device or 
+fails with Timeout after 10 seconds.
+
+
+```c#
+var searching = new ManualResetEvent(false);
+var externalIP = IPAddress.None;
+NatUtility.PortMapper = Upnp; // search only Upnp devices
+NatUtility.DiscoveryTimeout = 10*1000; // ten seconds
+NatUtility.DiscoveryTimedout += (sender, args) => searching.Set();
+NatUtility.DeviceFound += (sender, args) => {
+  Console.WriteLine("It got it!!");
+  ip = await device.GetExternalIPAsync();
+  searching.Set();
+};
+
+NatUtility.Initialize();
+NatUtility.StartDiscovery();
+searching.WaitOne();
+```
+
 For more info please check the [Wiki](https://github.com/lontivero/Open.Nat/wiki)
 
 Documentation
 -------------
-
-[Visit the Wiki page](https://github.com/lontivero/Open.Nat/wiki)
++ Why Open.NAT? Here you have [ten reasons](https://github.com/lontivero/Open.Nat/wiki/Why-Open.NAT%3F) that make Open.NAT a good candidate for you projects
++ [Visit the Wiki page](https://github.com/lontivero/Open.Nat/wiki)
 
 Development
 -----------
@@ -44,16 +67,29 @@ Build Status
 
 [![NuGet version](https://badge.fury.io/nu/open.nat.png)](http://badge.fury.io/nu/open.nat)
 
-### Version 1.0.17.0
-  *  Discovery timeout added.
-  *  Auto release ports opened in the session.
-  *  Fix NextSearch to use UtcNow (also performance)
-  *  Fix LocalIP property after add a port.
-  *  Tracing improvements
+### Version 1.0.19
+* Minor changes previous to v2.
+* After this version Open.NAT breaks backward compatibility.
 
-### Version 1.0.16.0
-  *  Discovery performance and bandwidth improved
-  *  Tracing improved
-  *  Cleaner code
+### Version 1.0.18
+* Discovery timeout raises an event.
+* Permanent mappings are created when NAT only supports that kind of mappings.
+* Protocol to use in discovery process can be specified.
+* Automatic renew port mappings before expiration.
+* Add operations timeout after 4 seconds.
+* Add parameters validation in Mapping class.
+* Fix UnhandledException event was never raised.
+
+### Version 1.0.17
+*  Discovery timeout added.
+*  Auto release ports opened in the session.
+*  Fix NextSearch to use UtcNow (also performance)
+*  Fix LocalIP property after add a port.
+*  Tracing improvements
+
+### Version 1.0.16
+*  Discovery performance and bandwidth improved
+*  Tracing improved
+*  Cleaner code
 
 

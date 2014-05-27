@@ -98,7 +98,7 @@ namespace Open.Nat
                 {
                     CreatePortMapListen(udpClient, mapping);
 
-                    while (attempt < PmpConstants.RetryAttempts /*&& !listenState.Success*/)
+                    while (attempt < PmpConstants.RetryAttempts)
                     {
                         await udpClient.SendAsync(buffer, buffer.Length, new IPEndPoint(LocalAddress, PmpConstants.ServerPort));
 

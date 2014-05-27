@@ -17,6 +17,10 @@
     <copyright>Please see LICENSE for more details.</copyright>
     <tags>NAT TRANSVERSAL UPNP PMP PORT FORWARD</tags>
     <releaseNotes>
+      **1.0.19**
+      Minor changes previous to v2.
+      After this version Open.NAT breaks backward compatibility.
+
       **1.0.18**
       Discovery timeout raises an event.
       Permanent mappings are created when NAT only supports that kind of mappings.
@@ -25,7 +29,7 @@
       Add operations timeout after 4 seconds.
       Add parameters validation in Mapping class.
       Fix UnhandledException event was never raised.
-      
+
       **1.0.17**
       Discovery timeout added.
       Auto release ports opened in the session.
