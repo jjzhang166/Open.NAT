@@ -138,13 +138,13 @@ namespace Open.Nat
                 .Any(x => x.Address.Equals(address));
         }
 
-        public override void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
+        public override NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
         {
             if (!IsSearchAddress(endpoint.Address)
                 || response.Length != 12 
                 || response[0] != PmpConstants.Version
                 || response[1] != PmpConstants.ServerNoop)
-                return;
+                return null;
 
             int errorcode = IPAddress.NetworkToHostOrder(BitConverter.ToInt16(response, 2));
             if (errorcode != 0)
@@ -154,7 +154,7 @@ namespace Open.Nat
             NextSearch = DateTime.Now.AddMinutes(5);
 
             _timeout = 250;
-            OnDeviceFound(new DeviceEventArgs(new PmpNatDevice(endpoint.Address, publicIp)));
+            return new PmpNatDevice(endpoint.Address, publicIp);
         }
     }
 }

@@ -83,7 +83,7 @@ namespace Open.Nat
                 // Read out the content of the message, hopefully picking 
                 // everything up in the case where we have no contentlength
 
-                var responseBody = contentLength != 1
+                var responseBody = contentLength != -1
                                     ? reader.ReadAsMany((int) contentLength)
                                     : reader.ReadToEnd();
 

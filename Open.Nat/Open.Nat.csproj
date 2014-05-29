@@ -72,6 +72,7 @@
     <Compile Include="PmpSearcher.cs" />
     <Compile Include="Pmp\PmpConstants.cs" />
     <Compile Include="Pmp\PmpNatDevice.cs" />
+    <Compile Include="PortMapper.cs" />
     <Compile Include="Searcher.cs" />
     <Compile Include="UpnpSearcher.cs" />
     <Compile Include="Upnp\DiscoveryResponseMessage.cs" />

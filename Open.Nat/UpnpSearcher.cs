@@ -90,7 +90,7 @@ namespace Open.Nat
         {
             NextSearch = DateTime.UtcNow.AddMinutes(1);
 
-            var searchEndpoint = new IPEndPoint(WellKnownConstants.IPv4MulticastAddress /*IPAddress.Broadcast*/, 1900);
+            var searchEndpoint = new IPEndPoint(/*WellKnownConstants.IPv4MulticastAddress*/ IPAddress.Broadcast, 1900);
             foreach (var serviceType in ServiceTypes)
             {
                 var datax = DiscoverDeviceMessage.Encode(serviceType);
@@ -106,7 +106,7 @@ namespace Open.Nat
             }
         }
 
-        public override void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
+        public override NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
         {
             // Convert it to a string for easy parsing
             string dataString = null;
@@ -121,7 +121,7 @@ namespace Open.Nat
 
                 NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "UPnP Response: {0}", dataString);
 
-                if (!IsValidControllerService(serviceType)) return;
+                if (!IsValidControllerService(serviceType)) return null;
                 NatUtility.TraceSource.LogInfo("UPnP Response: Router advertised a '{0}' service!!!", serviceType);
 
                 var location = message["Location"];
@@ -131,11 +131,9 @@ namespace Open.Nat
 
                 if (_devices.ContainsKey(locationUri))
                 {
-                    // We already have found this device, so we just refresh it to let people know it's
-                    // Still alive. If a device doesn't respond to a search, we dump it.
                     NatUtility.TraceSource.LogInfo("Already found - Ignored");
                     _devices[locationUri].Touch();
-                    return;
+                    return null;
                 }
 
                 // If we send 3 requests at a time, ensure we only fetch the services list once
@@ -144,7 +142,7 @@ namespace Open.Nat
 				{
 					var last = _lastFetched[endpoint.Address];
 					if ((DateTime.Now - last) < TimeSpan.FromSeconds(20))
-						return;
+						return null;
 				}
 				_lastFetched[endpoint.Address] = DateTime.Now;
 
@@ -152,7 +150,16 @@ namespace Open.Nat
 
                 var deviceInfo = BuildUpnpNatDeviceInfo(localAddress, locationUri);
 
-                FetchDeciceServiceListInfo(deviceInfo);
+                UpnpNatDevice device;
+                lock (_devices)
+                {
+                    device = new UpnpNatDevice(deviceInfo);
+                    if (!_devices.ContainsKey(locationUri))
+                    {
+                        _devices.Add(locationUri, device);
+                    }
+                }
+                return device;
             }
             catch (Exception ex)
             {
@@ -165,6 +172,7 @@ namespace Open.Nat
                 NatUtility.TraceSource.LogError(dataString ?? "No data available");
                 NatUtility.TraceSource.LogError("-- end ------------------------------------");
             }
+            return null;
         }
 
         private static bool IsValidControllerService(string serviceType)
@@ -252,27 +260,6 @@ namespace Open.Nat
                 var xmldoc = new XmlDocument();
                 xmldoc.LoadXml(servicesXml);
                 return xmldoc;
-            }
-        }
-
-        private void FetchDeciceServiceListInfo(UpnpNatDeviceInfo deviceInfo)
-        {
-            try
-            {
-                UpnpNatDevice device;
-                lock (_devices)
-                {
-                    device = new UpnpNatDevice(deviceInfo);
-                    if (!_devices.ContainsKey(deviceInfo.ServiceControlUri))
-                    {
-                        _devices.Add(deviceInfo.ServiceControlUri, device);
-                    }
-                }
-                OnDeviceFound(new DeviceEventArgs(device));
-            }
-            catch (Exception)
-            {
-                NatUtility.TraceSource.LogError("Found device couldn't be configured");
             }
         }
     }

@@ -28,29 +28,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 
 namespace Open.Nat
 {
     internal abstract class Searcher : ISearcher
     {
-        public event EventHandler<DeviceEventArgs> DeviceFound;
         protected List<UdpClient> Sockets;
-
-        public void Receive()
-        {
-            var received = WellKnownConstants.NatPmpEndPoint;
-            foreach (var client in Sockets.Where(c => c.Available > 0))
-            {
-                var localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
-                var data = client.Receive(ref received);
-                Handle(localAddress, data, received);
-            }
-        }
 
         public void Search()
         {
@@ -73,16 +59,23 @@ namespace Open.Nat
             }
         }
 
-        protected void OnDeviceFound(DeviceEventArgs args)
+        public NatDevice Receive()
         {
-            var handler = DeviceFound;
-            if (handler != null)
-                handler(this, args);
+            NatDevice device = null;
+            var received = WellKnownConstants.NatPmpEndPoint;
+            foreach (var client in Sockets.Where(c => c.Available > 0))
+            {
+                var localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
+                var data = client.Receive(ref received);
+                device = AnalyseReceivedResponse(localAddress, data, received);
+                if(device != null) break;
+            }
+            return device;
         }
 
         protected abstract void Search(UdpClient client);
 
-        public abstract void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
+        public abstract NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
 
         protected DateTime NextSearch { get; set; }
 

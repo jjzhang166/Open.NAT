@@ -23,17 +23,15 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-using System;
+
 using System.Net;
 
 namespace Open.Nat
 {
     internal interface ISearcher
     {
-        event EventHandler<DeviceEventArgs> DeviceFound;
-
         void Search();
-        void Receive();
-        void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
+        NatDevice Receive();
+        NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
     }
 }
