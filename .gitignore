@@ -3,13 +3,13 @@
 *.pidb
 *.swp
 
-*/bin
-*/obj
-/packages
+bin/
+obj/
+packages/
 
 # Ignore VS files
 *.user
 *.suo
 
 #ignore Resharper folders
-/_ReSharper.Open.Nat
+_ReSharper*/
