@@ -75,15 +75,15 @@ namespace Open.Nat
                 switch (me.ErrorCode)
                 {
                     case UpnpConstants.OnlyPermanentLeasesSupported:
-                        NatUtility.TraceSource.LogWarn("Only Permanent Leases Supported - There is no warranty it will be closed");
+                        NatDiscoverer.TraceSource.LogWarn("Only Permanent Leases Supported - There is no warranty it will be closed");
                         mapping.Lifetime = 0;
                         break;
                     case UpnpConstants.SamePortValuesRequired:
-                        NatUtility.TraceSource.LogWarn("Same Port Values Required - Using internal port {0}", mapping.PrivatePort);
+                        NatDiscoverer.TraceSource.LogWarn("Same Port Values Required - Using internal port {0}", mapping.PrivatePort);
                         mapping.PublicPort = mapping.PrivatePort;
                         break;
                     case UpnpConstants.RemoteHostOnlySupportsWildcard:
-                        NatUtility.TraceSource.LogWarn("Remote Host Only Supports Wildcard");
+                        NatDiscoverer.TraceSource.LogWarn("Remote Host Only Supports Wildcard");
                         mapping.PublicIP = IPAddress.None;
                         break;
                     //case UpnpConstants.ExternalPortOnlySupportsWildcard:

@@ -32,6 +32,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace Open.Nat
 {
@@ -103,31 +104,32 @@ namespace Open.Nat
             }
             catch (Exception e)
             {
-                NatUtility.TraceSource.LogError("There was a problem finding gateways: " + e);
+                NatDiscoverer.TraceSource.LogError("There was a problem finding gateways: " + e);
                 // NAT-PMP does not use multicast, so there isn't really a good fallback.
             }
 		}
 
-		protected override void Search (UdpClient client)
+		protected override void Search (UdpClient client, CancellationToken cancellationToken)
         {
             // Sort out the time for the next search first. The spec says the 
             // timeout should double after each attempt. Once it reaches 64 seconds
             // (and that attempt fails), assume no devices available
-            NextSearch = DateTime.UtcNow.AddMilliseconds(_timeout);
-            _timeout *= 2;
+            //NextSearch = DateTime.UtcNow.AddMilliseconds(_timeout);
+            //_timeout *= 2;
 
-            // We've tried 9 times as per spec, try searching again in 5 minutes
-            if (_timeout == 128 * 1000)
-            {
-                _timeout = 250;
-                NextSearch = DateTime.UtcNow.AddMinutes(5);
-                return;
-            }
+            //// We've tried 9 times as per spec, try searching again in 5 minutes
+            //if (_timeout == 128 * 1000)
+            //{
+            //    _timeout = 250;
+            //    NextSearch = DateTime.UtcNow.AddMinutes(5);
+            //    return;
+            //}
 
             // The nat-pmp search message. Must be sent to GatewayIP:53531
             var buffer = new[] { PmpConstants.Version, PmpConstants.OperationExternalAddressRequest };
             foreach (var gatewayEndpoint in _gatewayLists[client])
             {
+                if(cancellationToken.IsCancellationRequested) return;
                 client.Send(buffer, buffer.Length, gatewayEndpoint);
             }
         }
@@ -148,10 +150,10 @@ namespace Open.Nat
 
             int errorcode = IPAddress.NetworkToHostOrder(BitConverter.ToInt16(response, 2));
             if (errorcode != 0)
-                NatUtility.TraceSource.LogError("Non zero error: {0}", errorcode);
+                NatDiscoverer.TraceSource.LogError("Non zero error: {0}", errorcode);
 
             var publicIp = new IPAddress(new[] { response[8], response[9], response[10], response[11] });
-            NextSearch = DateTime.Now.AddMinutes(5);
+            //NextSearch = DateTime.Now.AddMinutes(5);
 
             _timeout = 250;
             return new PmpNatDevice(endpoint.Address, publicIp);

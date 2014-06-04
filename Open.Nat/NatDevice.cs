@@ -118,7 +118,7 @@ namespace Open.Nat
         internal void ReleaseAll()
         {
             var mapCount = _openMapping.Count;
-            NatUtility.TraceSource.LogInfo("{0} ports to close", mapCount);
+            NatDiscoverer.TraceSource.LogInfo("{0} ports to close", mapCount);
             for (var i = 0; i < mapCount; i++)
             {
                 var mapping = _openMapping[i];
@@ -126,11 +126,11 @@ namespace Open.Nat
                 try
                 {
                     DeletePortMapAsync(mapping);
-                    NatUtility.TraceSource.LogInfo( mapping + " port successfully closed"); 
+                    NatDiscoverer.TraceSource.LogInfo( mapping + " port successfully closed"); 
                 }
                 catch(Exception)
                 {
-                    NatUtility.TraceSource.LogError( mapping + " port couldn't be close");
+                    NatDiscoverer.TraceSource.LogError( mapping + " port couldn't be close");
                 }
             }
             _openMapping.Clear();
@@ -151,14 +151,14 @@ namespace Open.Nat
             {
                 mapping.Expiration = DateTime.UtcNow.AddMinutes(10);
 
-                NatUtility.TraceSource.LogInfo("Renewing mapping {0}", mapping);
+                NatDiscoverer.TraceSource.LogInfo("Renewing mapping {0}", mapping);
                 CreatePortMapAsync(mapping);
-                NatUtility.TraceSource.LogInfo("Next renew scheduled at: {0}", mapping.Expiration.ToLocalTime().TimeOfDay);
+                NatDiscoverer.TraceSource.LogInfo("Next renew scheduled at: {0}", mapping.Expiration.ToLocalTime().TimeOfDay);
 
             }
             catch (Exception)
             {
-                NatUtility.TraceSource.LogInfo("Renew {0} failed", mapping);
+                NatDiscoverer.TraceSource.LogInfo("Renew {0} failed", mapping);
             }
         }
     }

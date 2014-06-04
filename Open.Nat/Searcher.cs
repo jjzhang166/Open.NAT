@@ -27,61 +27,85 @@
 //
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Open.Nat
 {
-    internal abstract class Searcher : ISearcher
+    internal abstract class Searcher
     {
         protected List<UdpClient> Sockets;
 
-        public void Search()
+        public async Task<IEnumerable<NatDevice>> Search(bool onlyOne, CancellationToken cancelationToken)
         {
-            if (!IsSearchTime) return;
-
-            NatUtility.TraceSource.LogInfo("Searching for: {0}", GetType().Name);
-
-            foreach (var socket in Sockets)
-            {
+            return await Task.Factory.StartNew(_ =>{
                 try
                 {
-                    Search(socket);
+                    NatDiscoverer.TraceSource.LogInfo("Searching for: {0}", GetType().Name);
+                    Discover(cancelationToken);
+                    Thread.Sleep(2000);
+                    return Receive(onlyOne, cancelationToken);
+                }
+                finally
+                {
+                    CloseSockets();
+                }
+
+            }, cancelationToken, TaskCreationOptions.AttachedToParent );
+
+        }
+
+        private IEnumerable<NatDevice> Receive(bool onlyOne, CancellationToken cancelationToken)
+        {
+            var devices = new List<NatDevice>();
+            //var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelationToken);
+            foreach (var client in Sockets.Where(x=>x.Available>0))
+            {
+                var client1 = client;
+                var localHost = ((IPEndPoint)client1.Client.LocalEndPoint).Address;
+                var receivedFrom = new IPEndPoint(IPAddress.None, 0);
+                var buffer = client1.Receive(ref receivedFrom);
+                var device = AnalyseReceivedResponse(localHost, buffer, receivedFrom);
+                if (device != null)
+                    devices.Add(device);
+            }
+
+            return devices;
+        }
+
+        private void Discover(CancellationToken cancelationToken)
+        {
+            foreach (var socket in Sockets)
+            {
+                if (cancelationToken.IsCancellationRequested) break;
+                try
+                {
+                    Search(socket, cancelationToken);
                 }
                 catch (Exception e)
                 {
-                    NatUtility.TraceSource.LogError("Error searching {0} - Details:", GetType().Name);
-                    NatUtility.TraceSource.LogError(e.ToString());
+                    NatDiscoverer.TraceSource.LogError("Error searching {0} - Details:", GetType().Name);
+                    NatDiscoverer.TraceSource.LogError(e.ToString());
                     continue; // Ignore any search errors
                 }
             }
         }
 
-        public NatDevice Receive()
-        {
-            NatDevice device = null;
-            var received = WellKnownConstants.NatPmpEndPoint;
-            foreach (var client in Sockets.Where(c => c.Available > 0))
-            {
-                var localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
-                var data = client.Receive(ref received);
-                device = AnalyseReceivedResponse(localAddress, data, received);
-                if(device != null) break;
-            }
-            return device;
-        }
-
-        protected abstract void Search(UdpClient client);
+        protected abstract void Search(UdpClient client, CancellationToken cancellationToken);
 
         public abstract NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
 
-        protected DateTime NextSearch { get; set; }
-
-        public bool IsSearchTime
+        public void CloseSockets()
         {
-            get { return NextSearch < DateTime.UtcNow; }
+            foreach (var udpClient in Sockets)
+            {
+                udpClient.Close();
+            }
         }
     }
 }

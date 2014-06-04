@@ -24,14 +24,16 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections.Generic;
 using System.Net;
+using System.Threading;
 
 namespace Open.Nat
 {
     internal interface ISearcher
     {
-        void Search();
-        NatDevice Receive();
+        void Search(CancellationToken cancellationToken);
+        IEnumerable<NatDevice> Receive();
         NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
     }
 }

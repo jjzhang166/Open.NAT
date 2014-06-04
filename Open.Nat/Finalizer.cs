@@ -29,9 +29,9 @@ namespace Open.Nat
     {
         ~Finalizer() 
         {
-            NatUtility.TraceSource.LogInfo("Closing ports opened in this session");
-            NatUtility.RenewTimer.Dispose();
-            NatUtility.ReleaseAll();
+            NatDiscoverer.TraceSource.LogInfo("Closing ports opened in this session");
+            NatDiscoverer.RenewTimer.Dispose();
+            NatDiscoverer.ReleaseAll();
         }
     }
 }

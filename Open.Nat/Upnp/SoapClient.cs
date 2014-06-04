@@ -49,7 +49,7 @@ namespace Open.Nat
 
         public async Task<XmlDocument> InvokeAsync(string operationName, IDictionary<string, object> args)
         {
-            NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "SOAPACTION: **{0}** url:{1}", operationName, _url);
+            NatDiscoverer.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "SOAPACTION: **{0}** url:{1}", operationName, _url);
             var messageBody = BuildMessageBody(operationName, args);
             var request = BuildHttpWebRequest(operationName, messageBody);
 
@@ -88,7 +88,7 @@ namespace Open.Nat
                                     : reader.ReadToEnd();
 
                 var responseXml = GetXmlDocument(responseBody);
-                NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "Response: \n{0}", responseXml.ToPrintableXML());
+                NatDiscoverer.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "Response: \n{0}", responseXml.ToPrintableXML());
 
                 return responseXml;
             }
@@ -127,7 +127,7 @@ namespace Open.Nat
             sb.Append("</s:Envelope>\r\n\r\n");
             var requestBody = sb.ToString();
 
-            NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, requestBody);
+            NatDiscoverer.TraceSource.TraceEvent(TraceEventType.Verbose, 0, requestBody);
             var messageBody = Encoding.UTF8.GetBytes(requestBody);
             return messageBody;
         }
@@ -148,7 +148,7 @@ namespace Open.Nat
             {
                 var code = Convert.ToInt32(node.GetXmlElementText("errorCode"), CultureInfo.InvariantCulture);
                 var errorMessage = node.GetXmlElementText("errorDescription");
-                NatUtility.TraceSource.LogWarn("Server failed with error: {0} - {1}", code, errorMessage);
+                NatDiscoverer.TraceSource.LogWarn("Server failed with error: {0} - {1}", code, errorMessage);
                 throw new MappingException(code, errorMessage);
             }
 

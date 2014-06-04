@@ -27,7 +27,6 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,22 +36,21 @@ namespace Open.Nat.ConsoleTest
 	{
         public static void Main(string[] args)
 		{
-            NatUtility.TraceSource.Switch.Level = SourceLevels.Verbose;
-            NatUtility.TraceSource.Listeners.Add(new ColorConsoleListener());
+            NatDiscoverer.TraceSource.Switch.Level = SourceLevels.Verbose;
+            NatDiscoverer.TraceSource.Listeners.Add(new ConsoleTraceListener());
             Test().Wait();
 
-            Console.WriteLine("Press any kay to exit...");
+            Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
         }
 
         private async static Task Test()
         {
-            var nat = new NatUtility();
+            var nat = new NatDiscoverer();
             var cts = new CancellationTokenSource();
-            cts.CancelAfter(4000);
-            var devices = await nat.DiscoverAsync(PortMapper.Upnp, cts);
-
-            Console.WriteLine("{0} devices were discovered", devices.Count);
+            cts.CancelAfter(10000);
+            var devices = await nat.DiscoverDevicesAsync(PortMapper.Upnp, cts);
+            Console.WriteLine("{0} devices!", devices.Count());
             foreach (var device in devices)
             {
                 var ip = await device.GetExternalIPAsync();
@@ -84,5 +82,5 @@ namespace Open.Nat.ConsoleTest
                 
             }
         }
-	}
+    }
 }

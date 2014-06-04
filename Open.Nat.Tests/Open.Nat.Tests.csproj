@@ -55,6 +55,7 @@
     <Compile Include="UpnpMockServer.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Responses\ServiceDescription1.txt" />
     <Content Include="Responses\ServiceDescription.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

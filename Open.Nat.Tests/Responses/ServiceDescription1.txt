@@ -58,11 +58,11 @@
 <UDN>uuid:0000e068-20a0-00e0-20a0-48a802086048</UDN>
 <serviceList>
 <service>
-<serviceType>urn:schemas-upnp-org:service:WANIPConnection:2</serviceType>
-<serviceId>urn:upnp-org:serviceId:WANPPPConn2</serviceId>
-<controlURL>/uuid:0000e068-20a0-00e0-20a0-48a802086048/WANIPConnection:2</controlURL>
-<eventSubURL>/uuid:0000e068-20a0-00e0-20a0-48a802086048/WANIPConnection:2</eventSubURL>
-<SCPDURL>/dynsvc/WANPPPConnection:2.xml</SCPDURL>
+<serviceType>urn:schemas-upnp-org:service:WANPPPConnection:1</serviceType>
+<serviceId>urn:upnp-org:serviceId:WANPPPConn1</serviceId>
+<controlURL>/uuid:0000e068-20a0-00e0-20a0-48a802086048/WANPPPConnection:1</controlURL>
+<eventSubURL>/uuid:0000e068-20a0-00e0-20a0-48a802086048/WANPPPConnection:1</eventSubURL>
+<SCPDURL>/dynsvc/WANPPPConnection:1.xml</SCPDURL>
 </service>
 </serviceList>
 </device>

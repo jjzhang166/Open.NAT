@@ -25,7 +25,9 @@
 //
 
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -35,7 +37,7 @@ namespace Open.Nat
     /// <summary>
     /// 
     /// </summary>
-    public class NatUtility
+    public class NatDiscoverer
     {
         /// <summary>
         /// The <see cref="http://msdn.microsoft.com/en-us/library/vstudio/system.diagnostics.tracesource">TraceSource</see> instance
@@ -54,45 +56,53 @@ namespace Open.Nat
         /// </remarks>
         public readonly static TraceSource TraceSource = new TraceSource("OpenNat");
 
-        private static readonly List<NatDevice> Devices = new List<NatDevice>();
+        private static readonly ConcurrentBag<NatDevice> Devices = new ConcurrentBag<NatDevice>();
         private static readonly Finalizer Finalizer = new Finalizer();
-        private static readonly Searcher UpnpSearcher = new UpnpSearcher(new IPAddressesProvider());
-        private static readonly Searcher PmpSearcher = new PmpSearcher(new IPAddressesProvider());
         internal static readonly Timer RenewTimer = new Timer(RenewMappings, null, 1000, 30000);
 
         private CancellationToken _cancellationToken;
-        private List<Searcher> _searchers;
 
-        public async Task<IList<NatDevice>> DiscoverAsync(PortMapper portMapper, CancellationTokenSource cts)
+        public async Task<NatDevice> DiscoverDeviceAsync(PortMapper portMapper, CancellationTokenSource cts)
+        {
+            var devices = await DiscoverAsync(portMapper, true, cts);
+            return devices.FirstOrDefault();
+        }
+
+        public async Task<IEnumerable<NatDevice>> DiscoverDevicesAsync(PortMapper portMapper, CancellationTokenSource cts)
+        {
+            var devices = await DiscoverAsync(portMapper, false, cts);
+            return Devices.ToArray();
+        }
+
+        private async Task<IEnumerable<NatDevice>> DiscoverAsync(PortMapper portMapper, bool onlyOne, CancellationTokenSource cts)
         {
             TraceSource.LogInfo("StartDiscovery");
             _cancellationToken = cts.Token;
 
-            _searchers = new List<Searcher>();
-            if (portMapper.HasFlag(PortMapper.Pmp))  _searchers.Add(PmpSearcher);
-            if (portMapper.HasFlag(PortMapper.Upnp)) _searchers.Add(UpnpSearcher);
-
-            return await Task.Factory.StartNew(_ =>
+            await Task.Factory.StartNew(async _ => 
             {
                 TraceSource.LogInfo("Searching");
+                var ips = new IPAddressesProvider();
+                foreach (var ip in ips.UnicastAddresses()) TraceSource.LogInfo("Unicast Address: " + ip);
+                foreach (var ip in ips.GatewayAddresses()) TraceSource.LogInfo("Gateway Address: " + ip);
+                foreach (var ip in ips.DnsAddresses()) TraceSource.LogInfo("DNS Address    : " + ip);
 
-                while (!_cancellationToken.IsCancellationRequested)
+                var pmpSearcher = new PmpSearcher(ips);
+                var pmpDevices = await pmpSearcher.Search(onlyOne, _cancellationToken);
+                foreach (var device in pmpDevices)
                 {
-                    foreach (var searcher in _searchers)
-                    {
-                        if (_cancellationToken.IsCancellationRequested) break;
-                        searcher.Search();
-                        Thread.Sleep(10);
-                        if (_cancellationToken.IsCancellationRequested) break;
-                        var d = searcher.Receive();
-                        if (d != null) Devices.Add(d);
-                    }
+                    Devices.Add(device);
                 }
-                return Devices;
-            }, _cancellationToken, TaskCreationOptions.LongRunning);
+
+                var upnpSearcher = new UpnpSearcher(ips);
+                var upnpdevices = await upnpSearcher.Search(onlyOne, _cancellationToken);
+                foreach (var device in upnpdevices)
+                {
+                    Devices.Add(device);
+                }
+            }, TaskCreationOptions.LongRunning) ;
+            return Devices.ToArray();
         }
-
-
 
         //private static void OnDeviceFound(object sender, DeviceEventArgs args)
         //{
@@ -134,4 +144,19 @@ namespace Open.Nat
             }
         }
 	}
+
+    static class TaskExtensions
+    {
+        internal static void WaitFor(Task[] tasks, bool onlyOne)
+        {
+            if (onlyOne)
+            {
+                Task.WaitAny(tasks);
+            }
+            else
+            {
+                Task.WaitAll(tasks);
+            }            
+        }
+    }
 }
