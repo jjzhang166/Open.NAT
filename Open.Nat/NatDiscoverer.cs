@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,7 +30,7 @@ namespace Open.Nat
         /// </remarks>
         public readonly static TraceSource TraceSource = new TraceSource("Open.NAT");
 
-        private static readonly ConcurrentBag<NatDevice> Devices = new ConcurrentBag<NatDevice>();
+        private static readonly Dictionary<string, NatDevice> Devices = new Dictionary<string, NatDevice>();
 
         // Finalizer is never used however its destructor, that releases the open ports, is invoked by the
         // process as part of the shuting down step. So, don't remove it!
@@ -78,8 +79,22 @@ namespace Open.Nat
 
             await Task.WhenAll(searcherTasks);
             TraceSource.LogInfo("StopDiscovery");
-
-            return searcherTasks.SelectMany(x => x.Result);
+            
+            var devices = searcherTasks.SelectMany(x => x.Result);
+            foreach (var device in devices)
+            {
+                var key = device.ToString();
+                NatDevice nat;
+                if(Devices.TryGetValue(key, out nat))
+                {
+                    nat.Touch();
+                }
+                else
+                {
+                    Devices.Add(key, device);
+                }
+            }
+            return devices;
         }
 
         //private static void OnDeviceFound(object sender, DeviceEventArgs args)
@@ -108,7 +123,7 @@ namespace Open.Nat
         /// </remarks>
         public static void ReleaseAll()
         {
-            foreach (var device in Devices)
+            foreach (var device in Devices.Values)
             {
                 device.ReleaseAll();
             }
@@ -116,7 +131,7 @@ namespace Open.Nat
 
         private static void RenewMappings(object state)
         {
-            foreach (var device in Devices)
+            foreach (var device in Devices.Values)
             {
                 device.RenewMappings();
             }
