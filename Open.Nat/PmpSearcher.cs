@@ -56,50 +56,34 @@ namespace Open.Nat
 
             try
             {
-                foreach (var n in NetworkInterface.GetAllNetworkInterfaces())
+                var gatewayList = _ipprovider.GatewayAddresses()
+                    .Select(ip => new IPEndPoint(ip, PmpConstants.ServerPort))
+                    .ToList();
+
+                if (!gatewayList.Any())
                 {
-                    if (n.OperationalStatus != OperationalStatus.Up && n.OperationalStatus != OperationalStatus.Unknown)
-                        continue;
+                    gatewayList.AddRange(
+                        _ipprovider.DnsAddresses()
+                        .Select(ip => new IPEndPoint(ip, PmpConstants.ServerPort)));
+                }
 
-                    var properties = n.GetIPProperties();
-                    var gatewayList = new List<IPEndPoint>();
+                if (!gatewayList.Any()) return;
 
-                    foreach (var gateway in properties.GatewayAddresses)
+                foreach (var address in _ipprovider.UnicastAddresses())
+                {
+                    UdpClient client;
+
+                    try
                     {
-                        if (gateway.Address.AddressFamily != AddressFamily.InterNetwork) continue;
-                        gatewayList.Add(new IPEndPoint(gateway.Address, PmpConstants.ServerPort));
+                        client = new UdpClient(new IPEndPoint(address, 0));
+                    }
+                    catch (SocketException)
+                    {
+                        continue; // Move on to the next address.
                     }
 
-                    if (gatewayList.Count == 0)
-                    {
-                        /* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
-                        foreach (var gateway in properties.DnsAddresses)
-                        {
-                            if (gateway.AddressFamily != AddressFamily.InterNetwork) continue;
-                            gatewayList.Add(new IPEndPoint(gateway, PmpConstants.ServerPort));
-                        }
-                    }
-
-                    if (gatewayList.Count == 0) continue;
-
-                    foreach (var address in properties.UnicastAddresses)
-                    {
-                        if (address.Address.AddressFamily != AddressFamily.InterNetwork) continue;
-
-                        UdpClient client;
-
-                        try
-                        {
-                            client = new UdpClient(new IPEndPoint(address.Address, 0));
-                        }
-                        catch (SocketException)
-                        {
-                            continue; // Move on to the next address.
-                        }
-
-                        _gatewayLists.Add(client, gatewayList); 
-                        Sockets.Add(client);
-                    }
+                    _gatewayLists.Add(client, gatewayList); 
+                    Sockets.Add(client);
                 }
             }
             catch (Exception e)
@@ -114,16 +98,15 @@ namespace Open.Nat
             // Sort out the time for the next search first. The spec says the 
             // timeout should double after each attempt. Once it reaches 64 seconds
             // (and that attempt fails), assume no devices available
-            //NextSearch = DateTime.UtcNow.AddMilliseconds(_timeout);
-            //_timeout *= 2;
+            NextSearch = DateTime.UtcNow.AddMilliseconds(_timeout);
+            _timeout *= 2;
 
-            //// We've tried 9 times as per spec, try searching again in 5 minutes
-            //if (_timeout == 128 * 1000)
-            //{
-            //    _timeout = 250;
-            //    NextSearch = DateTime.UtcNow.AddMinutes(5);
-            //    return;
-            //}
+            if (_timeout >= 3000)
+            {
+                _timeout = 250;
+                NextSearch = DateTime.UtcNow.AddSeconds(10);
+                return;
+            }
 
             // The nat-pmp search message. Must be sent to GatewayIP:53531
             var buffer = new[] { PmpConstants.Version, PmpConstants.OperationExternalAddressRequest };

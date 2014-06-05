@@ -42,16 +42,16 @@ namespace Open.Nat
         private readonly List<NatDevice> _devices = new List<NatDevice>(); 
         protected List<UdpClient> Sockets;
         public EventHandler<DeviceEventArgs> DeviceFound;
- 
+        internal DateTime NextSearch = DateTime.UtcNow;
+
         public async Task<IEnumerable<NatDevice>> Search(CancellationToken cancelationToken)
         {
-            await Task.Factory.StartNew(_ =>
+            await Task.Factory.StartNew(async _ =>
                 {
                     NatDiscoverer.TraceSource.LogInfo("Searching for: {0}", GetType().Name);
                     while (!cancelationToken.IsCancellationRequested)
                     {
                         Discover(cancelationToken);
-                        Thread.Sleep(20);
                         Receive(cancelationToken);
                     }
                     CloseSockets();
@@ -61,6 +61,8 @@ namespace Open.Nat
 
         private void Discover(CancellationToken cancelationToken)
         {
+            if(DateTime.UtcNow < NextSearch) return;
+
             foreach (var socket in Sockets)
             {
                 try

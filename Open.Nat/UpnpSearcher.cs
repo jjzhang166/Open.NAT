@@ -88,6 +88,7 @@ namespace Open.Nat
 
         protected override void Discover(UdpClient client, CancellationToken cancelationToken)
         {
+            NextSearch = DateTime.UtcNow.AddSeconds(1);
             var searchEndpoint = new IPEndPoint(
                 WellKnownConstants.IPv4MulticastAddress
                 /*IPAddress.Broadcast*/

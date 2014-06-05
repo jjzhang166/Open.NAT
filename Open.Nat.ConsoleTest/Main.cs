@@ -37,7 +37,7 @@ namespace Open.Nat.ConsoleTest
         public static void Main(string[] args)
 		{
             NatDiscoverer.TraceSource.Switch.Level = SourceLevels.Verbose;
-            NatDiscoverer.TraceSource.Listeners.Add(new ConsoleTraceListener());
+            NatDiscoverer.TraceSource.Listeners.Add(new ColorConsoleTraceListener());
             Test().Wait();
 
             Console.WriteLine("Press any key to exit...");
@@ -48,9 +48,9 @@ namespace Open.Nat.ConsoleTest
         {
             var nat = new NatDiscoverer();
             var cts = new CancellationTokenSource();
-            cts.CancelAfter(3000);
+            cts.CancelAfter(20000);
             var d = DateTime.UtcNow;
-            var devices = await nat.DiscoverDevicesAsync(PortMapper.Upnp, cts);
+            var devices = await nat.DiscoverDevicesAsync(PortMapper.Pmp, cts);
             Console.WriteLine("Time: {0}", (DateTime.UtcNow - d).TotalSeconds);
             Console.WriteLine("{0} devices!", devices.Count());
             foreach (var device in devices)

@@ -29,7 +29,7 @@ using System.Diagnostics;
 
 namespace Open.Nat.ConsoleTest
 {
-    public class ColorConsoleListener : TraceListener
+    public class ColorConsoleTraceListener : TraceListener
     {
         private static object _sync = new object();
 
