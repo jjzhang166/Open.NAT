@@ -48,8 +48,10 @@ namespace Open.Nat.ConsoleTest
         {
             var nat = new NatDiscoverer();
             var cts = new CancellationTokenSource();
-            cts.CancelAfter(10000);
+            cts.CancelAfter(3000);
+            var d = DateTime.UtcNow;
             var devices = await nat.DiscoverDevicesAsync(PortMapper.Upnp, cts);
+            Console.WriteLine("Time: {0}", (DateTime.UtcNow - d).TotalSeconds);
             Console.WriteLine("{0} devices!", devices.Count());
             foreach (var device in devices)
             {

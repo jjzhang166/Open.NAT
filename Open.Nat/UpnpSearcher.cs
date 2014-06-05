@@ -86,7 +86,7 @@ namespace Open.Nat
 			return clients;
 		}
 
-        protected override void Search(UdpClient client, CancellationToken cancellationToken)
+        protected override void Discover(UdpClient client, CancellationToken cancelationToken)
         {
             var searchEndpoint = new IPEndPoint(
                 WellKnownConstants.IPv4MulticastAddress
@@ -102,7 +102,7 @@ namespace Open.Nat
                 // Yes, however it works perfectly well with just 1 request.
                 for (var i = 0; i < 2; i++)
                 {
-                    if(cancellationToken.IsCancellationRequested) return;
+                    if (cancelationToken.IsCancellationRequested) return;
                     client.Send(data, data.Length, searchEndpoint);
                 }
             }

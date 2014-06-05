@@ -109,7 +109,7 @@ namespace Open.Nat
             }
 		}
 
-		protected override void Search (UdpClient client, CancellationToken cancellationToken)
+        protected override void Discover(UdpClient client, CancellationToken cancelationToken)
         {
             // Sort out the time for the next search first. The spec says the 
             // timeout should double after each attempt. Once it reaches 64 seconds
@@ -129,7 +129,8 @@ namespace Open.Nat
             var buffer = new[] { PmpConstants.Version, PmpConstants.OperationExternalAddressRequest };
             foreach (var gatewayEndpoint in _gatewayLists[client])
             {
-                if(cancellationToken.IsCancellationRequested) return;
+                if (cancelationToken.IsCancellationRequested) return;
+
                 client.Send(buffer, buffer.Length, gatewayEndpoint);
             }
         }

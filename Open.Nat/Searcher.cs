@@ -39,53 +39,33 @@ namespace Open.Nat
 {
     internal abstract class Searcher
     {
+        private readonly List<NatDevice> _devices = new List<NatDevice>(); 
         protected List<UdpClient> Sockets;
-
-        public async Task<IEnumerable<NatDevice>> Search(bool onlyOne, CancellationToken cancelationToken)
+        public EventHandler<DeviceEventArgs> DeviceFound;
+ 
+        public async Task<IEnumerable<NatDevice>> Search(CancellationToken cancelationToken)
         {
-            return await Task.Factory.StartNew(_ =>{
-                try
+            await Task.Factory.StartNew(_ =>
                 {
                     NatDiscoverer.TraceSource.LogInfo("Searching for: {0}", GetType().Name);
-                    Discover(cancelationToken);
-                    Thread.Sleep(2000);
-                    return Receive(onlyOne, cancelationToken);
-                }
-                finally
-                {
+                    while (!cancelationToken.IsCancellationRequested)
+                    {
+                        Discover(cancelationToken);
+                        Thread.Sleep(20);
+                        Receive(cancelationToken);
+                    }
                     CloseSockets();
-                }
-
-            }, cancelationToken, TaskCreationOptions.AttachedToParent );
-
-        }
-
-        private IEnumerable<NatDevice> Receive(bool onlyOne, CancellationToken cancelationToken)
-        {
-            var devices = new List<NatDevice>();
-            //var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelationToken);
-            foreach (var client in Sockets.Where(x=>x.Available>0))
-            {
-                var client1 = client;
-                var localHost = ((IPEndPoint)client1.Client.LocalEndPoint).Address;
-                var receivedFrom = new IPEndPoint(IPAddress.None, 0);
-                var buffer = client1.Receive(ref receivedFrom);
-                var device = AnalyseReceivedResponse(localHost, buffer, receivedFrom);
-                if (device != null)
-                    devices.Add(device);
-            }
-
-            return devices;
+                }, cancelationToken);
+            return _devices;
         }
 
         private void Discover(CancellationToken cancelationToken)
         {
             foreach (var socket in Sockets)
             {
-                if (cancelationToken.IsCancellationRequested) break;
                 try
                 {
-                    Search(socket, cancelationToken);
+                    Discover(socket, cancelationToken);
                 }
                 catch (Exception e)
                 {
@@ -96,7 +76,23 @@ namespace Open.Nat
             }
         }
 
-        protected abstract void Search(UdpClient client, CancellationToken cancellationToken);
+        private void Receive(CancellationToken cancelationToken)
+        {
+            foreach (var client in Sockets.Where(x=>x.Available>0))
+            {
+                if(cancelationToken.IsCancellationRequested) return;
+
+                var localHost = ((IPEndPoint)client.Client.LocalEndPoint).Address;
+                var receivedFrom = new IPEndPoint(IPAddress.None, 0);
+                var buffer = client.Receive(ref receivedFrom);
+                var device = AnalyseReceivedResponse(localHost, buffer, receivedFrom);
+
+                if (device != null) RaiseDeviceFound(device);
+            }
+        }
+
+
+        protected abstract void Discover(UdpClient client, CancellationToken cancelationToken);
 
         public abstract NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
 
@@ -106,6 +102,14 @@ namespace Open.Nat
             {
                 udpClient.Close();
             }
+        }
+
+        private void RaiseDeviceFound(NatDevice device)
+        {
+            _devices.Add(device);
+            var handler = DeviceFound;
+            if(handler!=null)
+                handler(this, new DeviceEventArgs(device));
         }
     }
 }
