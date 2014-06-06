@@ -43,12 +43,32 @@ namespace Mono.Nat.Upnp
                         ? string.Join(":", c.Skip(1)) 
                         : string.Empty 
                     select new {Key = key, Value = value.Trim()};
-            _headers = headers.ToDictionary(x => x.Key, x=>x.Value);
+            _headers = headers.ToDictionary(x => x.Key.ToUpper(), x=>x.Value);
         }
 
         public string this[string key]
         {
-            get { return _headers[key]; }
+            get { return _headers[key.ToUpper()]; }
         }
+    }
+
+    class xx
+    {
+        void x()
+        {
+            var m =
+                "HTTP/1.1 200 OK\r\n" +
+                "CACHE-CONTROL: max-age=100\r\n" +
+                "DATE: Fri, 06 Jun 2014 05:24:52 GMT\r\n" +
+                "EXT:\r\n" +
+                "LOCATION: http://192.168.0.1:1900/igd.xml\r\n" +
+                "SERVER: ipos/7.0 UPnP/1.0 TL-WR740N/4.0\r\n" +
+                "ST: urn:schemas-upnp-org:service:WANIPConnection:1\r\n" +
+                "USN: uuid:9f0865b3-f5da-4ad5-85b7-7404637fdf37::urn:schemas-upnp-org:service:WANIPConnection:1\r\n";
+
+            var mm = new DiscoveryResponseMessage(m);
+            var st = mm["Location"];
+        }
+        
     }
 }
