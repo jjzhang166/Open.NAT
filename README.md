@@ -67,9 +67,12 @@ Build Status
 
 [![NuGet version](https://badge.fury.io/nu/open.nat.png)](http://badge.fury.io/nu/open.nat)
 
+### Version 1.1.0
+* Fix for SSDP Location header.
+* After this version Open.NAT breaks backward compatibility.
+
 ### Version 1.0.19
 * Minor changes previous to v2.
-* After this version Open.NAT breaks backward compatibility.
 
 ### Version 1.0.18
 * Discovery timeout raises an event.
