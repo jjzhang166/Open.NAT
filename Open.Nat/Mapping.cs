@@ -78,7 +78,7 @@ namespace Open.Nat
         /// Since most programs don't know this in advance, it is often set to 0, which means 'unlimited' or 'permanent'.
         /// </summary>
         /// <remarks>
-        /// All portmappings are release automatically as part of the shutdown process when <see cref="NatUtility">NatUtility</see>.<see cref="NatUtility#releaseonshutdown">ReleaseOnShutdown</see> is true.
+        /// All portmappings are release automatically as part of the shutdown process when <see cref="NatDiscoverer">NatUtility</see>.<see cref="NatUtility#releaseonshutdown">ReleaseOnShutdown</see> is true.
         /// Permanent portmappings will not be released if the process ends anormally.
         /// Since most programs don't know the lifetime in advance, Open.NAT renew all the portmappings (except the permanents) before they expires. So, developers have to close explicitly those portmappings
         /// they don't want to remain open for the session.

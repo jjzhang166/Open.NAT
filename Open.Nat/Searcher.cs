@@ -27,68 +27,91 @@
 //
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Open.Nat
 {
-    internal abstract class Searcher : ISearcher
+    internal abstract class Searcher
     {
-        public event EventHandler<DeviceEventArgs> DeviceFound;
+        private readonly List<NatDevice> _devices = new List<NatDevice>(); 
         protected List<UdpClient> Sockets;
+        public EventHandler<DeviceEventArgs> DeviceFound;
+        internal DateTime NextSearch = DateTime.UtcNow;
 
-        public void Receive()
+        public async Task<IEnumerable<NatDevice>> Search(CancellationToken cancelationToken)
         {
-            var received = WellKnownConstants.NatPmpEndPoint;
-            foreach (var client in Sockets.Where(c => c.Available > 0))
-            {
-                var localAddress = ((IPEndPoint)client.Client.LocalEndPoint).Address;
-                var data = client.Receive(ref received);
-                Handle(localAddress, data, received);
-            }
+            await Task.Factory.StartNew(async _ =>
+                {
+                    NatDiscoverer.TraceSource.LogInfo("Searching for: {0}", GetType().Name);
+                    while (!cancelationToken.IsCancellationRequested)
+                    {
+                        Discover(cancelationToken);
+                        Receive(cancelationToken);
+                    }
+                    CloseSockets();
+                }, cancelationToken);
+            return _devices;
         }
 
-        public void Search()
+        private void Discover(CancellationToken cancelationToken)
         {
-            if (!IsSearchTime) return;
-
-            NatUtility.TraceSource.LogInfo("Searching for: {0}", GetType().Name);
+            if(DateTime.UtcNow < NextSearch) return;
 
             foreach (var socket in Sockets)
             {
                 try
                 {
-                    Search(socket);
+                    Discover(socket, cancelationToken);
                 }
                 catch (Exception e)
                 {
-                    NatUtility.TraceSource.LogError("Error searching {0} - Details:", GetType().Name);
-                    NatUtility.TraceSource.LogError(e.ToString());
+                    NatDiscoverer.TraceSource.LogError("Error searching {0} - Details:", GetType().Name);
+                    NatDiscoverer.TraceSource.LogError(e.ToString());
                     continue; // Ignore any search errors
                 }
             }
         }
 
-        protected void OnDeviceFound(DeviceEventArgs args)
+        private void Receive(CancellationToken cancelationToken)
         {
-            var handler = DeviceFound;
-            if (handler != null)
-                handler(this, args);
+            foreach (var client in Sockets.Where(x=>x.Available>0))
+            {
+                if(cancelationToken.IsCancellationRequested) return;
+
+                var localHost = ((IPEndPoint)client.Client.LocalEndPoint).Address;
+                var receivedFrom = new IPEndPoint(IPAddress.None, 0);
+                var buffer = client.Receive(ref receivedFrom);
+                var device = AnalyseReceivedResponse(localHost, buffer, receivedFrom);
+
+                if (device != null) RaiseDeviceFound(device);
+            }
         }
 
-        protected abstract void Search(UdpClient client);
 
-        public abstract void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
+        protected abstract void Discover(UdpClient client, CancellationToken cancelationToken);
 
-        protected DateTime NextSearch { get; set; }
+        public abstract NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
 
-        public bool IsSearchTime
+        public void CloseSockets()
         {
-            get { return NextSearch < DateTime.UtcNow; }
+            foreach (var udpClient in Sockets)
+            {
+                udpClient.Close();
+            }
+        }
+
+        private void RaiseDeviceFound(NatDevice device)
+        {
+            _devices.Add(device);
+            var handler = DeviceFound;
+            if(handler!=null)
+                handler(this, new DeviceEventArgs(device));
         }
     }
 }

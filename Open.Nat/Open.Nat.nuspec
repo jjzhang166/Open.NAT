@@ -17,6 +17,10 @@
     <copyright>Please see LICENSE for more details.</copyright>
     <tags>NAT TRANSVERSAL UPNP PMP PORT FORWARD</tags>
     <releaseNotes>
+      **2.0.0**
+      Thus version breaks backward compatibility with v1.
+      Changes the event-based discovery process' nature to an asynchronous one.
+
       **1.1.0**
       Fix for SSDP Location header.
       After this version Open.NAT breaks backward compatibility.

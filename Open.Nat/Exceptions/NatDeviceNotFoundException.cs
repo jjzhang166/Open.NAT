@@ -1,6 +1,6 @@
 //
 // Authors:
-//   Lucas Ontivero lucasontivero@gmail.com 
+//   Lucas Ontivero lucas.ontivero@gmail.com
 //
 // Copyright (C) 2014 Lucas Ontivero
 //
@@ -24,16 +24,31 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Collections.Generic;
-using System.Net;
-using System.Threading;
+using System;
+using System.Runtime.Serialization;
 
 namespace Open.Nat
 {
-    internal interface ISearcher
+    [Serializable]
+    public class NatDeviceNotFoundException : Exception
     {
-        void Search(CancellationToken cancellationToken);
-        IEnumerable<NatDevice> Receive();
-        NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
+		public NatDeviceNotFoundException()
+		{
+		}
+
+		public NatDeviceNotFoundException(string message)
+			: base(message)
+		{
+		}
+
+		public NatDeviceNotFoundException(string message, Exception innerException)
+			: base(message, innerException)
+		{
+		}
+
+        protected NatDeviceNotFoundException(SerializationInfo info, StreamingContext context)
+			: base(info, context)
+		{
+		}
     }
 }

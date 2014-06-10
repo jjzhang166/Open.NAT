@@ -68,10 +68,12 @@
     <Compile Include="Exceptions\MappingException.cs" />
     <Compile Include="ISearcher.cs" />
     <Compile Include="Mapping.cs" />
-    <Compile Include="NatUtility.cs" />
+    <Compile Include="Exceptions\NatDeviceNotFoundException.cs" />
+    <Compile Include="NatDiscoverer.cs" />
     <Compile Include="PmpSearcher.cs" />
     <Compile Include="Pmp\PmpConstants.cs" />
     <Compile Include="Pmp\PmpNatDevice.cs" />
+    <Compile Include="PortMapper.cs" />
     <Compile Include="Searcher.cs" />
     <Compile Include="UpnpSearcher.cs" />
     <Compile Include="Upnp\DiscoveryResponseMessage.cs" />

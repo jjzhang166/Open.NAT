@@ -42,8 +42,8 @@ namespace Open.Nat
                 var old = HostEndPoint;
                 serviceControlUrl = serviceControlUrl.Substring(u.GetLeftPart(UriPartial.Authority).Length);
 
-                NatUtility.TraceSource.LogInfo("{0}: Absolute URI detected. Host address is now: {1}", old, HostEndPoint);
-                NatUtility.TraceSource.LogInfo("{0}: New control url: {1}", HostEndPoint, serviceControlUrl);
+                NatDiscoverer.TraceSource.LogInfo("{0}: Absolute URI detected. Host address is now: {1}", old, HostEndPoint);
+                NatDiscoverer.TraceSource.LogInfo("{0}: New control url: {1}", HostEndPoint, serviceControlUrl);
             }
 
             var builder = new UriBuilder("http", locationUri.Host, locationUri.Port, serviceControlUrl);

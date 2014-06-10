@@ -115,7 +115,7 @@ namespace Open.Nat
                     type, 
                     mapping.Protocol,
 		            mapping.PrivatePort);
-                NatUtility.TraceSource.LogError(message);
+                NatDiscoverer.TraceSource.LogError(message);
                 var pmpException = e as MappingException;
 				throw new MappingException (message, pmpException);
 			}
