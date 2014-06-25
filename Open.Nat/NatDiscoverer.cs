@@ -62,7 +62,7 @@ namespace Open.Nat
 
         private async Task<IEnumerable<NatDevice>> DiscoverAsync(PortMapper portMapper, bool onlyOne, CancellationTokenSource cts)
         {
-            TraceSource.LogInfo("StartDiscovery");
+            TraceSource.LogInfo("Start Discovery");
             var searcherTasks = new List<Task<IEnumerable<NatDevice>>>();
             if(portMapper.HasFlag(PortMapper.Upnp))
             {
@@ -78,7 +78,7 @@ namespace Open.Nat
             }
 
             await Task.WhenAll(searcherTasks);
-            TraceSource.LogInfo("StopDiscovery");
+            TraceSource.LogInfo("Stop Discovery");
             
             var devices = searcherTasks.SelectMany(x => x.Result);
             foreach (var device in devices)
