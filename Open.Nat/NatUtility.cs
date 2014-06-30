@@ -180,7 +180,7 @@ namespace Open.Nat
             var task = Task.Factory.StartNew(SearchAndListen, TaskCreationOptions.LongRunning);
             task.ContinueWith(o =>
                 {
-                    var exceptionType = task.Exception.GetType();
+                    var exceptionType = task.Exception.GetBaseException().GetType();
                     if (exceptionType == typeof(TimeoutException) && DiscoveryTimedout != null)
                     {
                         DiscoveryTimedout(typeof (NatUtility), new DiscoveryTimeoutEventArgs());
