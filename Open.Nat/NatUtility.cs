@@ -77,6 +77,11 @@ namespace Open.Nat
         public static bool ReleaseOnShutdown { get; set; }
 
         /// <summary>
+        /// Specifies if Open.NAT should attempt to automatically renew expired port mappings.
+        /// </summary>
+        public static bool AutoRenewMappings { get; set; }
+
+        /// <summary>
         /// Specifies the protocol that should be used for searching a NAT device. <see cref="PortMapper">PortMapper enum</see>
         /// For example, if the value is Upnp, the discovery process will search only for Upnp devices.
         /// </summary>
@@ -166,6 +171,7 @@ namespace Open.Nat
         {
             PortMapper = PortMapper.Both;
             ReleaseOnShutdown = true;
+            AutoRenewMappings = true;
             Searching = new ManualResetEvent(false);
             DiscoveryTimeout = 5000;
         }
@@ -308,6 +314,7 @@ namespace Open.Nat
 
         private static void RenewMappings(object state)
         {
+            if (!AutoRenewMappings) return;
             foreach (var device in Devices)
             {
                 device.RenewMappings();
