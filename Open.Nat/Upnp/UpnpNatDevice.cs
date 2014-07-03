@@ -58,7 +58,7 @@ namespace Open.Nat
             return response.ExternalIPAddress;
         }
 
-        public override async Task CreatePortMapAsync(Mapping mapping)
+        public override async Task CreatePortMapAsync(Mapping mapping, bool releaseOnShutdown)
         {
             mapping.PrivateIP = DeviceInfo.LocalAddress;
             CreatePortMappingRequestMessage message;
@@ -68,7 +68,7 @@ namespace Open.Nat
                 await _soapClient
                     .InvokeAsync("AddPortMapping", message.ToXml())
                     .TimeoutAfter(TimeSpan.FromSeconds(4));
-                RegisterMapping(mapping);
+                if(releaseOnShutdown) RegisterMapping(mapping);
             }
             catch(MappingException me)
             {
@@ -90,22 +90,24 @@ namespace Open.Nat
                     //    NatUtility.TraceSource.LogWarn("External Port Only Supports Wildcard");
                     //    break;
                 }
-                message = new CreatePortMappingRequestMessage(mapping);
-                _soapClient
-                    .InvokeAsync("AddPortMapping", message.ToXml())
-                    .TimeoutAfter(TimeSpan.FromSeconds(4));
-                RegisterMapping(mapping);
+                CreatePortMapAsync(mapping, releaseOnShutdown);
             }
         }
 
 		public override async Task DeletePortMapAsync(Mapping mapping)
 		{
-            var message = new DeletePortMappingRequestMessage(mapping);
-            await _soapClient
-                .InvokeAsync("DeletePortMapping", message.ToXml())
-                .TimeoutAfter(TimeSpan.FromSeconds(4));
-
-            UnregisterMapping(mapping);
+		    try
+		    {
+                var message = new DeletePortMappingRequestMessage(mapping);
+                await _soapClient
+                    .InvokeAsync("DeletePortMapping", message.ToXml())
+                    .TimeoutAfter(TimeSpan.FromSeconds(4));
+                UnregisterMapping(mapping);
+            }
+		    catch (MappingException e)
+		    {
+                if(e.ErrorCode != 714) throw; 
+		    }
         }
 
 		public override async Task<IEnumerable<Mapping>> GetAllMappingsAsync()

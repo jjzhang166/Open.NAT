@@ -42,7 +42,7 @@ namespace Open.Nat
     /// </summary>
 	public abstract class NatDevice
     {
-        private readonly List<Mapping> _openMapping = new List<Mapping>();
+        private readonly List<Mapping> _openedMapping = new List<Mapping>();
 	    protected DateTime LastSeen { get; private set; }
 
         internal void Touch()
@@ -54,11 +54,12 @@ namespace Open.Nat
         /// Creates the port map asynchronous.
         /// </summary>
         /// <param name="mapping">The <see cref="Mapping">Mapping</see> entry.</param>
+        /// <param name="releaseOnShutdown"> </param>
         /// <example>
         /// device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1700, 1600));
         /// </example>
         /// <exception cref="MappingException">MappingException</exception>
-        public abstract Task CreatePortMapAsync(Mapping mapping);
+        public abstract Task CreatePortMapAsync(Mapping mapping, bool releaseOnShutdown);
         /// <summary>
         /// Deletes a mapped port asynchronous.
         /// </summary>
@@ -107,21 +108,21 @@ namespace Open.Nat
 
         protected void RegisterMapping(Mapping mapping)
         {
-            _openMapping.Add(mapping);    
+            _openedMapping.Add(mapping);    
         }
 
         protected void UnregisterMapping(Mapping mapping)
         {
-            _openMapping.Remove(mapping);
+            _openedMapping.RemoveAll(x=>x.Equals(mapping));
         }
 
         internal void ReleaseAll()
         {
-            var mapCount = _openMapping.Count;
+            var mapCount = _openedMapping.Count;
             NatDiscoverer.TraceSource.LogInfo("{0} ports to close", mapCount);
             for (var i = 0; i < mapCount; i++)
             {
-                var mapping = _openMapping[i];
+                var mapping = _openedMapping[i];
 
                 try
                 {
@@ -133,12 +134,12 @@ namespace Open.Nat
                     NatDiscoverer.TraceSource.LogError( mapping + " port couldn't be close");
                 }
             }
-            _openMapping.Clear();
+            _openedMapping.Clear();
         }
 
         internal void RenewMappings()
         {
-            var mappings = _openMapping.Where(x => x.ShoundRenew());
+            var mappings = _openedMapping.Where(x => x.ShoundRenew());
             foreach (var mapping in mappings)
             {
                 RenewMapping(mapping);
@@ -152,7 +153,7 @@ namespace Open.Nat
                 mapping.Expiration = DateTime.UtcNow.AddMinutes(10);
 
                 NatDiscoverer.TraceSource.LogInfo("Renewing mapping {0}", mapping);
-                CreatePortMapAsync(mapping);
+                CreatePortMapAsync(mapping, true);
                 NatDiscoverer.TraceSource.LogInfo("Next renew scheduled at: {0}", mapping.Expiration.ToLocalTime().TimeOfDay);
 
             }

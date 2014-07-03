@@ -27,6 +27,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,38 +47,42 @@ namespace Open.Nat.ConsoleTest
 
         private async static Task Test()
         {
+            // Search for 2 seconds before cancelation
             var nat = new NatDiscoverer();
             var cts = new CancellationTokenSource();
-            cts.CancelAfter(20000);
-            var d = DateTime.UtcNow;
-            var devices = await nat.DiscoverDevicesAsync(PortMapper.Pmp, cts);
-            Console.WriteLine("Time: {0}", (DateTime.UtcNow - d).TotalSeconds);
-            Console.WriteLine("{0} devices!", devices.Count());
-            foreach (var device in devices)
+            cts.CancelAfter(5000);
+            var devices = await nat.DiscoverDevicesAsync(PortMapper.Upnp, cts);
+
+            var natDevices = devices as NatDevice[] ?? devices.ToArray();
+            var sb = new StringBuilder();
+            sb.AppendFormat("\n{0} devices!", natDevices.Count());
+            foreach (var device in natDevices)
             {
                 var ip = await device.GetExternalIPAsync();
 
-                Console.WriteLine("Your IP: {0}", ip);
-                await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700, 10000, "Open.Nat Testing"));
-                Console.WriteLine("Added mapping: {0}:1700 -> 127.0.0.1:1600\n", ip);
-                Console.WriteLine("+------+-------------------------------+--------------------------------+------------------------------------+-------------------------+");
-                Console.WriteLine("| PROT | PUBLIC (Reacheable)           | PRIVATE (Your computer)        | Descriptopn                        |                         |");
-                Console.WriteLine("+------+----------------------+--------+-----------------------+--------+------------------------------------+-------------------------+");
-                Console.WriteLine("|      | IP Address           | Port   | IP Address            | Port   |                                    | Expires                 |");
-                Console.WriteLine("+------+----------------------+--------+-----------------------+--------+------------------------------------+-------------------------+");
+                sb.AppendFormat("\nYour IP: {0}", ip);
+                await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700, 10000, "Open.Nat Testing"), true);
+                sb.AppendFormat("\nAdded mapping: {0}:1700 -> 127.0.0.1:1600\n", ip);
+                sb.AppendFormat("\n+------+-------------------------------+--------------------------------+------------------------------------+-------------------------+");
+                sb.AppendFormat("\n| PROT | PUBLIC (Reacheable)           | PRIVATE (Your computer)        | Descriptopn                        |                         |");
+                sb.AppendFormat("\n+------+----------------------+--------+-----------------------+--------+------------------------------------+-------------------------+");
+                sb.AppendFormat("\n|      | IP Address           | Port   | IP Address            | Port   |                                    | Expires                 |");
+                sb.AppendFormat("\n+------+----------------------+--------+-----------------------+--------+------------------------------------+-------------------------+");
                 foreach (var mapping in await device.GetAllMappingsAsync())
                 {
-                    Console.WriteLine("|  {5} | {0,-20} | {1,6} | {2,-21} | {3,6} | {4,-35}|{6,25}|",
+                    sb.AppendFormat("\n|  {5} | {0,-20} | {1,6} | {2,-21} | {3,6} | {4,-35}|{6,25}|",
                         ip, mapping.PublicPort, mapping.PrivateIP, mapping.PrivatePort, mapping.Description, mapping.Protocol == Protocol.Tcp ? "TCP" : "UDP", mapping.Expiration);
                 }
-                Console.WriteLine("+------+----------------------+--------+-----------------------+--------+------------------------------------+-------------------------+");
+                sb.AppendFormat("\n+------+----------------------+--------+-----------------------+--------+------------------------------------+-------------------------+");
 
-                Console.WriteLine("[Removing TCP mapping] {0}:1700 -> 127.0.0.1:1600", ip);
+                sb.AppendFormat("\n[Removing TCP mapping] {0}:1700 -> 127.0.0.1:1600", ip);
                 await device.DeletePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700));
-                Console.WriteLine("[Done]");
+                sb.AppendFormat("\n[Done]");
+
+                Console.WriteLine(sb.ToString());
 
                 var mappings = await device.GetAllMappingsAsync();
-                var deleted = !mappings.Any(x => x.Description == "Open.Nat Testing");
+                var deleted = mappings.All(x => x.Description != "Open.Nat Testing");
                 Console.WriteLine(deleted
                     ? "[SUCCESS]: Test mapping effectively removed ;)"
                     : "[FAILURE]: Test mapping wan not removed!");

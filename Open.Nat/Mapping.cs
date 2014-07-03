@@ -213,6 +213,26 @@ namespace Open.Nat
             return !_isPermanent && (DateTime.UtcNow - Expiration).TotalSeconds < 5;
         }
 
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            var m = obj as Mapping;
+            if (ReferenceEquals(null, m)) return false;
+            return PublicPort == m.PublicPort && PrivateIP == m.PrivateIP && PrivatePort == m.PrivatePort;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = PublicPort;
+                hashCode = (hashCode * 397) ^ (PrivateIP != null ? PrivateIP.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ PrivatePort;
+                return hashCode;
+            }
+        }
+
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
@@ -222,26 +242,11 @@ namespace Open.Nat
         public override string ToString()
         {
             return string.Format("{0} {1} --> {2}:{3} ({4})",
-                                    Protocol == Protocol.Udp ? "Tcp" : "Udp",
+                                    Protocol == Protocol.Tcp ? "Tcp" : "Udp",
                                     PublicPort,
                                     PrivateIP,
                                     PrivatePort,
                                     Description); 
         }
 	}
-
-    internal class Guard
-    {
-        public static void IsInRange(int paramValue, int lowerBound, int upperBound, string paramName)
-        {
-            if (paramValue < lowerBound || paramValue > upperBound)
-                throw new ArgumentOutOfRangeException(paramName);
-        }
-
-        public static void IsTrue(bool exp, string paramName)
-        {
-            if(!exp)
-                throw new ArgumentOutOfRangeException(paramName);
-        }
-    }
 }

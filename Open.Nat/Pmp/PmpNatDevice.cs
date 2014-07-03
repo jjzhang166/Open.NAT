@@ -47,17 +47,19 @@ namespace Open.Nat
 			_publicAddress = publicAddress;
 		}
 
-        public override async Task CreatePortMapAsync(Mapping mapping)
+        public override async Task CreatePortMapAsync(Mapping mapping, bool releaseOnShutdown)
         {
-            await CreatePortMapAsync(mapping, true)
+            await InternalCreatePortMapAsync(mapping, true)
                 .TimeoutAfter(TimeSpan.FromSeconds(4));
+            if (releaseOnShutdown) RegisterMapping(mapping);
         }
 
 		public override async Task DeletePortMapAsync (Mapping mapping)
 		{
-            await CreatePortMapAsync(mapping, false)
+            await InternalCreatePortMapAsync(mapping, false)
                 .TimeoutAfter(TimeSpan.FromSeconds(4));
-		}
+            UnregisterMapping(mapping);
+        }
 
 		public override Task<IEnumerable<Mapping>> GetAllMappingsAsync ()
 		{
@@ -76,7 +78,7 @@ namespace Open.Nat
 		}
 		
 
-		private async Task<Mapping> CreatePortMapAsync(Mapping mapping, bool create)
+		private async Task<Mapping> InternalCreatePortMapAsync(Mapping mapping, bool create)
 		{
 			var package = new List<byte> ();
 	
@@ -119,9 +121,6 @@ namespace Open.Nat
                 var pmpException = e as MappingException;
 				throw new MappingException (message, pmpException);
 			}
-
-            if(create) RegisterMapping(mapping); 
-            else UnregisterMapping(mapping);
 
             return mapping;
 		}
