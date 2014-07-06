@@ -25,13 +25,14 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
-namespace Mono.Nat.Upnp
+namespace Open.Nat
 {
     class DiscoveryResponseMessage
     {
-        private IDictionary<string, string> _headers;
+        private readonly IDictionary<string, string> _headers;
 
         public DiscoveryResponseMessage(string message)
         {
@@ -43,12 +44,12 @@ namespace Mono.Nat.Upnp
                         ? string.Join(":", c.Skip(1)) 
                         : string.Empty 
                     select new {Key = key, Value = value.Trim()};
-            _headers = headers.ToDictionary(x => x.Key.ToUpper(), x=>x.Value);
+            _headers = headers.ToDictionary(x => x.Key.ToUpperInvariant(), x => x.Value);
         }
 
         public string this[string key]
         {
-            get { return _headers[key.ToUpper()]; }
+            get { return _headers[key.ToUpperInvariant()]; }
         }
     }
 }

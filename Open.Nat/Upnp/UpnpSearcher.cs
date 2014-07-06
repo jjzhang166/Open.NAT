@@ -36,7 +36,6 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
 using System.Xml;
-using Mono.Nat.Upnp;
 
 namespace Open.Nat
 {
@@ -232,7 +231,7 @@ namespace Open.Nat
                     NatDiscoverer.TraceSource.LogInfo("{0}: Handshake Complete", hostEndPoint);
                     return new UpnpNatDeviceInfo(localAddress, location, serviceControlUrl, serviceType);
                 }
-                // NatUtility.TraceSource.LogWarn("No valid control service was found in the service descriptor document");
+
                 throw new Exception("No valid control service was found in the service descriptor document");
             }
             catch (WebException ex)

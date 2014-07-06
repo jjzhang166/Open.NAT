@@ -34,7 +34,7 @@ using System.Xml;
 
 namespace Open.Nat
 {
-    static class StreamExtensions
+    internal static class StreamExtensions
     {
         internal static string ReadAsMany(this StreamReader stream, int bytesToRead)
         {
@@ -45,7 +45,7 @@ namespace Open.Nat
 
         internal static string GetXmlElementText(this XmlNode node, string elementName)
         {
-            var element = node[elementName];
+            XmlElement element = node[elementName];
             return element != null ? element.InnerText : string.Empty;
         }
 
@@ -69,9 +69,9 @@ namespace Open.Nat
             source.TraceEvent(TraceEventType.Error, 0, format, args);
         }
 
-        internal static string ToPrintableXML(this XmlDocument document)
+        internal static string ToPrintableXml(this XmlDocument document)
         {
-            using(var stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 using (var writer = new XmlTextWriter(stream, Encoding.Unicode))
                 {
@@ -108,13 +108,14 @@ namespace Open.Nat
 #endif
             var timeoutCancellationTokenSource = new CancellationTokenSource();
 
-            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+            Task completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
             if (completedTask == task)
             {
                 timeoutCancellationTokenSource.Cancel();
                 return await task;
             }
-            throw new TimeoutException("The operation has timed out. The network is broken, router has gone or is too busy.");
+            throw new TimeoutException(
+                "The operation has timed out. The network is broken, router has gone or is too busy.");
         }
     }
 }

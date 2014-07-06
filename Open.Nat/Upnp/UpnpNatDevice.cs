@@ -58,17 +58,18 @@ namespace Open.Nat
             return response.ExternalIPAddress;
         }
 
-        public override async Task CreatePortMapAsync(Mapping mapping, bool releaseOnShutdown)
+        public override async Task CreatePortMapAsync(Mapping mapping)
         {
+            Guard.IsNotNull(mapping, "mapping");
+
             mapping.PrivateIP = DeviceInfo.LocalAddress;
-            CreatePortMappingRequestMessage message;
             try
             {
-                message = new CreatePortMappingRequestMessage(mapping);
+                var message = new CreatePortMappingRequestMessage(mapping);
                 await _soapClient
                     .InvokeAsync("AddPortMapping", message.ToXml())
                     .TimeoutAfter(TimeSpan.FromSeconds(4));
-                if(releaseOnShutdown) RegisterMapping(mapping);
+                RegisterMapping(mapping);
             }
             catch(MappingException me)
             {
@@ -77,6 +78,8 @@ namespace Open.Nat
                     case UpnpConstants.OnlyPermanentLeasesSupported:
                         NatDiscoverer.TraceSource.LogWarn("Only Permanent Leases Supported - There is no warranty it will be closed");
                         mapping.Lifetime = 0;
+                        // We create the mapping anyway. It must be released on shutdown.
+                        mapping.LifetimeType = MappingLifetime.Session;
                         break;
                     case UpnpConstants.SamePortValuesRequired:
                         NatDiscoverer.TraceSource.LogWarn("Same Port Values Required - Using internal port {0}", mapping.PrivatePort);
@@ -90,13 +93,15 @@ namespace Open.Nat
                     //    NatUtility.TraceSource.LogWarn("External Port Only Supports Wildcard");
                     //    break;
                 }
-                CreatePortMapAsync(mapping, releaseOnShutdown);
+                CreatePortMapAsync(mapping);
             }
         }
 
 		public override async Task DeletePortMapAsync(Mapping mapping)
 		{
-		    try
+            Guard.IsNotNull(mapping, "mapping");
+
+            try
 		    {
                 var message = new DeletePortMappingRequestMessage(mapping);
                 await _soapClient
@@ -106,7 +111,7 @@ namespace Open.Nat
             }
 		    catch (MappingException e)
 		    {
-                if(e.ErrorCode != 714) throw; 
+                if(e.ErrorCode != UpnpConstants.NoSuchEntryInArray) throw; 
 		    }
         }
 
@@ -138,7 +143,7 @@ namespace Open.Nat
                 }
                 catch (MappingException e)
                 {
-                    if (e.ErrorCode == 713) break; // there are no more mappings
+                    if (e.ErrorCode == UpnpConstants.SpecifiedArrayIndexInvalid) break; // there are no more mappings
                     throw;
                 }
             }
@@ -148,6 +153,9 @@ namespace Open.Nat
 
 		public override async Task<Mapping> GetSpecificMappingAsync (Protocol protocol, int port)
 		{
+            Guard.IsTrue(protocol == Protocol.Tcp || protocol == Protocol.Udp, "protocol");
+            Guard.IsInRange(port, 0, ushort.MaxValue, "port");
+
             try
             {
                 var message = new GetSpecificPortMappingEntryRequestMessage(protocol, port);
@@ -166,8 +174,8 @@ namespace Open.Nat
             }
             catch (MappingException e)
             {
-                if (e.ErrorCode != 714) throw;
-                return new Mapping(Protocol.Tcp, IPAddress.None, -1, -1);
+                if (e.ErrorCode !=  UpnpConstants.NoSuchEntryInArray) throw;
+                return null;
             }
         }
 

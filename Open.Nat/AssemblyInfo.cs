@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Open.Nat")]
@@ -15,5 +14,4 @@ using System.Runtime.InteropServices;
 [assembly: Guid("c8e81e95-9f15-4eb8-8982-3d2c9cd95dee")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.1.0.0")]
-
 [assembly: CLSCompliant(false)]

@@ -30,7 +30,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
 
@@ -49,14 +48,14 @@ namespace Open.Nat
             CreateSocketsAndAddGateways();
         }
 
-		private void CreateSocketsAndAddGateways()
-		{
+        private void CreateSocketsAndAddGateways()
+        {
             Sockets = new List<UdpClient>();
             _gatewayLists = new Dictionary<UdpClient, IEnumerable<IPEndPoint>>();
 
             try
             {
-                var gatewayList = _ipprovider.GatewayAddresses()
+                List<IPEndPoint> gatewayList = _ipprovider.GatewayAddresses()
                     .Select(ip => new IPEndPoint(ip, PmpConstants.ServerPort))
                     .ToList();
 
@@ -64,12 +63,12 @@ namespace Open.Nat
                 {
                     gatewayList.AddRange(
                         _ipprovider.DnsAddresses()
-                        .Select(ip => new IPEndPoint(ip, PmpConstants.ServerPort)));
+                            .Select(ip => new IPEndPoint(ip, PmpConstants.ServerPort)));
                 }
 
                 if (!gatewayList.Any()) return;
 
-                foreach (var address in _ipprovider.UnicastAddresses())
+                foreach (IPAddress address in _ipprovider.UnicastAddresses())
                 {
                     UdpClient client;
 
@@ -82,7 +81,7 @@ namespace Open.Nat
                         continue; // Move on to the next address.
                     }
 
-                    _gatewayLists.Add(client, gatewayList); 
+                    _gatewayLists.Add(client, gatewayList);
                     Sockets.Add(client);
                 }
             }
@@ -91,7 +90,7 @@ namespace Open.Nat
                 NatDiscoverer.TraceSource.LogError("There was a problem finding gateways: " + e);
                 // NAT-PMP does not use multicast, so there isn't really a good fallback.
             }
-		}
+        }
 
         protected override void Discover(UdpClient client, CancellationToken cancelationToken)
         {
@@ -109,8 +108,8 @@ namespace Open.Nat
             }
 
             // The nat-pmp search message. Must be sent to GatewayIP:53531
-            var buffer = new[] { PmpConstants.Version, PmpConstants.OperationExternalAddressRequest };
-            foreach (var gatewayEndpoint in _gatewayLists[client])
+            var buffer = new[] {PmpConstants.Version, PmpConstants.OperationExternalAddressRequest};
+            foreach (IPEndPoint gatewayEndpoint in _gatewayLists[client])
             {
                 if (cancelationToken.IsCancellationRequested) return;
 
@@ -127,7 +126,7 @@ namespace Open.Nat
         public override NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
         {
             if (!IsSearchAddress(endpoint.Address)
-                || response.Length != 12 
+                || response.Length != 12
                 || response[0] != PmpConstants.Version
                 || response[1] != PmpConstants.ServerNoop)
                 return null;
@@ -136,7 +135,7 @@ namespace Open.Nat
             if (errorcode != 0)
                 NatDiscoverer.TraceSource.LogError("Non zero error: {0}", errorcode);
 
-            var publicIp = new IPAddress(new[] { response[8], response[9], response[10], response[11] });
+            var publicIp = new IPAddress(new[] {response[8], response[9], response[10], response[11]});
             //NextSearch = DateTime.Now.AddMinutes(5);
 
             _timeout = 250;

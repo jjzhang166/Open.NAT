@@ -29,18 +29,33 @@ using System.Runtime.Serialization;
 
 namespace Open.Nat
 {
+    /// <summary>
+    /// 
+    /// </summary>
     [Serializable]
     public class NatDeviceNotFoundException : Exception
     {
+		/// <summary>
+		/// 
+		/// </summary>
 		public NatDeviceNotFoundException()
 		{
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="message"></param>
 		public NatDeviceNotFoundException(string message)
 			: base(message)
 		{
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="message"></param>
+		/// <param name="innerException"></param>
 		public NatDeviceNotFoundException(string message, Exception innerException)
 			: base(message, innerException)
 		{

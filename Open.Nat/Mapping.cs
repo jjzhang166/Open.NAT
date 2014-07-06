@@ -33,14 +33,22 @@ using System.Net;
 
 namespace Open.Nat
 {
+    enum MappingLifetime
+    {
+        Permanent,
+        Session,
+        Manual
+    }
+
 	/// <summary>
 	/// Represents a port forwarding entry in the NAT translation table.
 	/// </summary>
 	public class Mapping
 	{
 	    private DateTime _expiration;
-	    private bool _isPermanent;
 	    private int _lifetime;
+	    internal MappingLifetime LifetimeType { get; set; }
+	
 
         /// <summary>
         /// Gets the mapping's description. It is the value stored in the NewPortMappingDescription parameter. 
@@ -88,20 +96,22 @@ namespace Open.Nat
             get { return _lifetime; }
             internal set
             {
-                _lifetime = value;
-                switch (_lifetime)
+                switch (value)
                 {
                     case int.MaxValue:
                         _expiration = DateTime.MaxValue;
-                        _isPermanent = true;
+                        LifetimeType = MappingLifetime.Session;
+                        _lifetime = 10 * 60; // ten minutes
                         break;
                     case 0:
                         _expiration = DateTime.UtcNow;
-                        _isPermanent = true;
+                        LifetimeType = MappingLifetime.Permanent;
+                        _lifetime = 0;
                         break;
                     default:
                         _expiration = DateTime.UtcNow.AddSeconds(_lifetime);
-                        _isPermanent = false;
+                        LifetimeType = MappingLifetime.Manual;
+                        _lifetime = value;
                         break;
                 }
             } 
@@ -124,11 +134,6 @@ namespace Open.Nat
             : this(protocol, privateIP, privatePort, publicPort, 0, "Open.Nat")
 		{
 		}
-
-        internal Mapping(Protocol protocol, IPAddress privateIP, int privatePort, int publicPort, string description)
-            : this(protocol, privateIP, privatePort, publicPort, 0, description)
-        {
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Mapping"/> class.
@@ -180,7 +185,7 @@ namespace Open.Nat
         /// This constructor initializes a Permanent mapping.
         /// </remarks>
         public Mapping(Protocol protocol, int privatePort, int publicPort, string description)
-            : this(protocol, IPAddress.None, privatePort, publicPort, 0, description)
+            : this(protocol, IPAddress.None, privatePort, publicPort, int.MaxValue, description)
         {
         }
 
@@ -205,12 +210,12 @@ namespace Open.Nat
         /// </remarks>
 	    public bool IsExpired ()
 		{
-			return !_isPermanent && Expiration < DateTime.UtcNow;
+			return LifetimeType != MappingLifetime.Permanent && Expiration < DateTime.UtcNow;
 		}
 
         internal bool ShoundRenew()
         {
-            return !_isPermanent && (DateTime.UtcNow - Expiration).TotalSeconds < 5;
+            return LifetimeType != MappingLifetime.Permanent && (DateTime.UtcNow - Expiration).TotalSeconds < 5;
         }
 
         public override bool Equals(object obj)

@@ -55,12 +55,15 @@ namespace Open.Nat
         /// It allows to specify the NAT type to discover as well as the cancellation token in order.
         /// </remarks>
         /// <param name="portMapper">Port mapper protocol; Upnp, Pmp or both</param>
-        /// <param name="cts">Cancellation token source for cancelling the discovery process</param>
+        /// <param name="cancellationTokenSource">Cancellation token source for cancelling the discovery process</param>
         /// <returns>A NAT device</returns>
         /// <exception cref="NatDeviceNotFoundException">when no NAT found before cancellation</exception>
-        public async Task<NatDevice> DiscoverDeviceAsync(PortMapper portMapper, CancellationTokenSource cts)
+        public async Task<NatDevice> DiscoverDeviceAsync(PortMapper portMapper, CancellationTokenSource cancellationTokenSource)
         {
-            var devices = await DiscoverAsync(portMapper, true, cts);
+            Guard.IsTrue(portMapper == PortMapper.Upnp || portMapper == PortMapper.Pmp, "poertMapper");
+            Guard.IsNotNull(cancellationTokenSource, "cancellationTokenSource");
+
+            var devices = await DiscoverAsync(portMapper, true, cancellationTokenSource);
             var device = devices.FirstOrDefault();
             if(device==null)
             {
@@ -73,11 +76,14 @@ namespace Open.Nat
         /// Discovers and returns all NAT devices for the specified type. If no NAT device is found it returns an empty enumerable
         /// </summary>
         /// <param name="portMapper">Port mapper protocol; Upnp, Pmp or both</param>
-        /// <param name="cts">Cancellation token source for cancelling the discovery process</param>
+        /// <param name="cancellationTokenSource">Cancellation token source for cancelling the discovery process</param>
         /// <returns>All found NAT devices</returns>
-        public async Task<IEnumerable<NatDevice>> DiscoverDevicesAsync(PortMapper portMapper, CancellationTokenSource cts)
+        public async Task<IEnumerable<NatDevice>> DiscoverDevicesAsync(PortMapper portMapper, CancellationTokenSource cancellationTokenSource)
         {
-            var devices = await DiscoverAsync(portMapper, false, cts);
+            Guard.IsTrue(portMapper == PortMapper.Upnp || portMapper == PortMapper.Pmp, "poertMapper");
+            Guard.IsNotNull(cancellationTokenSource, "cancellationTokenSource");
+
+            var devices = await DiscoverAsync(portMapper, false, cancellationTokenSource);
             return devices.ToArray();
         }
 
@@ -129,6 +135,14 @@ namespace Open.Nat
             foreach (var device in Devices.Values)
             {
                 device.ReleaseAll();
+            }
+        }
+
+        internal static void ReleaseSessionMappings()
+        {
+            foreach (var device in Devices.Values)
+            {
+                device.ReleaseSessionMappings();
             }
         }
 

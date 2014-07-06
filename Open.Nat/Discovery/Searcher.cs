@@ -27,7 +27,6 @@
 //
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -73,7 +72,6 @@ namespace Open.Nat
                 {
                     NatDiscoverer.TraceSource.LogError("Error searching {0} - Details:", GetType().Name);
                     NatDiscoverer.TraceSource.LogError(e.ToString());
-                    continue; // Ignore any search errors
                 }
             }
         }

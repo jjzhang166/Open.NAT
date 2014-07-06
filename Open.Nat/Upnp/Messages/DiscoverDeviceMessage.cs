@@ -24,7 +24,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Text;
+using System.Globalization;
 
 namespace Open.Nat
 {
@@ -40,11 +40,11 @@ namespace Open.Nat
                              + "HOST: 239.255.255.250:1900\r\n"
                              + "MAN: \"ssdp:discover\"\r\n"
                              + "MX: 3\r\n"
-                            // + "ST: urn:schemas-upnp-org:service:WANIPConnection:1\r\n\r\n";
-                             +"ST: urn:schemas-upnp-org:service:{0}\r\n\r\n";
-                            //+ "ST:upnp:rootdevice\r\n\r\n";
+                             // + "ST: urn:schemas-upnp-org:service:WANIPConnection:1\r\n\r\n";
+                             + "ST: urn:schemas-upnp-org:service:{0}\r\n\r\n";
+            //+ "ST:upnp:rootdevice\r\n\r\n";
 
-            var ss = string.Format(s, serviceType);
+            string ss = string.Format(CultureInfo.InvariantCulture, s, serviceType);
             return ss;
         }
     }

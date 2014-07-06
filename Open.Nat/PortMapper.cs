@@ -12,6 +12,7 @@ namespace Open.Nat
         /// Use only Port Mapping Protocol
         /// </summary>
         Pmp,
+
         /// <summary>
         /// Use only Universal Plug and Play
         /// </summary>

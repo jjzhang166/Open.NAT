@@ -59,7 +59,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EventArgs\DiscoveryTimeoutEventArgs.cs" />
     <Compile Include="Finalizer.cs" />
     <Compile Include="Utils\Guard.cs" />
     <Compile Include="NatDevice.cs" />
@@ -67,16 +66,16 @@
     <Compile Include="Enums\ProtocolType.cs" />
     <Compile Include="EventArgs\DeviceEventArgs.cs" />
     <Compile Include="Exceptions\MappingException.cs" />
-    <Compile Include="ISearcher.cs" />
+    <Compile Include="Discovery\ISearcher.cs" />
     <Compile Include="Mapping.cs" />
     <Compile Include="Exceptions\NatDeviceNotFoundException.cs" />
     <Compile Include="NatDiscoverer.cs" />
-    <Compile Include="PmpSearcher.cs" />
+    <Compile Include="Pmp\PmpSearcher.cs" />
     <Compile Include="Pmp\PmpConstants.cs" />
     <Compile Include="Pmp\PmpNatDevice.cs" />
     <Compile Include="PortMapper.cs" />
-    <Compile Include="Searcher.cs" />
-    <Compile Include="UpnpSearcher.cs" />
+    <Compile Include="Discovery\Searcher.cs" />
+    <Compile Include="Upnp\UpnpSearcher.cs" />
     <Compile Include="Upnp\DiscoveryResponseMessage.cs" />
     <Compile Include="Upnp\Messages\DiscoverDeviceMessage.cs" />
     <Compile Include="Upnp\Messages\Requests\CreatePortMappingMessage.cs" />
@@ -98,12 +97,9 @@
     <Compile Include="Utils\WellKnownConstants.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Open.Nat.nuspec" />
     <None Include="Open.Nat.snk" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Discovery\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
   <ProjectExtensions>
     <VisualStudio AllowExistingFolder="true" />
