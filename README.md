@@ -28,34 +28,21 @@ Example
 The simplest scenario:
 
 ```c#
-NatUtility.DeviceFound += (sender, args) => {
-  Console.WriteLine("It got it!!");
-  var ip = await device.GetExternalIPAsync();
-  Console.WriteLine("The external IP Address is: " + ip);
-};
-
-NatUtility.Initialize();
-NatUtility.StartDiscovery();
+var discoverer = new NatDiscoverer();
+var device = await discoverer.DiscoverDeviceAsync();
+var ip = await device.GetExternalIPAsync();
+Console.WriteLine("The external IP Address is: {0} ", ip);
 ```
 
-The following piece of code shows a common scenario: It blocks the execution until it discovers a NAT-UPNP device or fails with Timeout after 10 seconds.
+The following piece of code shows a common scenario: It starts the discovery process for a NAT-UPNP device and onces discovered it creates a port mapping. If no device is found before ten seconds, it fails with NatDeviceNotFoundException.
 
 
 ```c#
-var searching = new ManualResetEvent(false);
-var externalIP = IPAddress.None;
-NatUtility.PortMapper = Upnp; // search only Upnp devices
-NatUtility.DiscoveryTimeout = 10*1000; // ten seconds
-NatUtility.DiscoveryTimedout += (sender, args) => searching.Set();
-NatUtility.DeviceFound += (sender, args) => {
-  Console.WriteLine("It got it!!");
-  ip = await device.GetExternalIPAsync();
-  searching.Set();
-};
+var discoverer = new NatDiscoverer();
+var cts = new CancellationTokenSource(10000);
+var device = await discoverer.DiscoverDeviceAsync(PortMapper.Upnp, cts);
 
-NatUtility.Initialize();
-NatUtility.StartDiscovery();
-searching.WaitOne();
+await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, 1600, 1700, "The mapping name"));
 ```
 
 For more info please check the [Wiki](https://github.com/lontivero/Open.Nat/wiki)
@@ -81,10 +68,7 @@ Build Status
 ### Version 2.0.0
 * Thus version breaks backward compatibility with v1.
 * Changes the event-based nature of discovery to an asynchronous one.
-* WANIPConnection v2 supported
-* Notifies about lost devices, reconnects and reapplies lost mappings.
-* Mappings can be renewed and/or closed on exit depending on how thery were configured.
-* Tracing implemented with correlation numbers
+* Managed port mapping timelife.
 
 ### Version 1.1.0
 * Fix for SSDP Location header.

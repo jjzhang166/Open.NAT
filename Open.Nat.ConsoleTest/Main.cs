@@ -47,10 +47,8 @@ namespace Open.Nat.ConsoleTest
 
         private async static Task Test()
         {
-            // Search for 2 seconds before cancelation
             var nat = new NatDiscoverer();
-            var cts = new CancellationTokenSource();
-            cts.CancelAfter(5000);
+            var cts = new CancellationTokenSource(5000);
             var device = await nat.DiscoverDeviceAsync(PortMapper.Upnp, cts);
 
             var sb = new StringBuilder();
