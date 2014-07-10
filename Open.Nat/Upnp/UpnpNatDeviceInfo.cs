@@ -23,6 +23,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
+
 using System;
 using System.Net;
 
@@ -39,11 +40,12 @@ namespace Open.Nat
             if (Uri.IsWellFormedUriString(serviceControlUrl, UriKind.Absolute))
             {
                 var u = new Uri(serviceControlUrl);
-                var old = HostEndPoint;
+                IPEndPoint old = HostEndPoint;
                 serviceControlUrl = serviceControlUrl.Substring(u.GetLeftPart(UriPartial.Authority).Length);
 
-                NatUtility.TraceSource.LogInfo("{0}: Absolute URI detected. Host address is now: {1}", old, HostEndPoint);
-                NatUtility.TraceSource.LogInfo("{0}: New control url: {1}", HostEndPoint, serviceControlUrl);
+                NatDiscoverer.TraceSource.LogInfo("{0}: Absolute URI detected. Host address is now: {1}", old,
+                                                  HostEndPoint);
+                NatDiscoverer.TraceSource.LogInfo("{0}: New control url: {1}", HostEndPoint, serviceControlUrl);
             }
 
             var builder = new UriBuilder("http", locationUri.Host, locationUri.Port, serviceControlUrl);

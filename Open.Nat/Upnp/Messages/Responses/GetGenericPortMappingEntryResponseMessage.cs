@@ -27,33 +27,23 @@
 //
 
 using System;
-using System.Diagnostics;
 using System.Xml;
 
 namespace Open.Nat
 {
     internal class GetGenericPortMappingEntryResponseMessage : ResponseMessageBase
     {
-        public string RemoteHost { get; private set; }
-        public int ExternalPort { get; private set; }
-        public Protocol Protocol { get; private set; }
-        public int InternalPort { get; private set; }
-        public string InternalClient { get; private set; }
-        public bool Enabled { get; private set; }
-        public string PortMappingDescription { get; private set; }
-        public int LeaseDuration { get; private set; }
-
-        public GetGenericPortMappingEntryResponseMessage(XmlDocument response, string serviceType, bool _genericMapping) 
+        public GetGenericPortMappingEntryResponseMessage(XmlDocument response, string serviceType, bool _genericMapping)
             : base(response, serviceType)
         {
-            var data = GetNode();
+            XmlNode data = GetNode();
 
             RemoteHost = (_genericMapping) ? data.GetXmlElementText("NewRemoteHost") : string.Empty;
             ExternalPort = (_genericMapping) ? Convert.ToInt32(data.GetXmlElementText("NewExternalPort")) : -1;
             if (_genericMapping)
                 Protocol = data.GetXmlElementText("NewProtocol").Equals("TCP", StringComparison.InvariantCultureIgnoreCase)
-                    ? Protocol.Tcp
-                    : Protocol.Udp;
+                               ? Protocol.Tcp
+                               : Protocol.Udp;
             else
                 Protocol = Protocol.Udp;
 
@@ -63,5 +53,14 @@ namespace Open.Nat
             PortMappingDescription = data.GetXmlElementText("NewPortMappingDescription");
             LeaseDuration = Convert.ToInt32(data.GetXmlElementText("NewLeaseDuration"));
         }
+
+        public string RemoteHost { get; private set; }
+        public int ExternalPort { get; private set; }
+        public Protocol Protocol { get; private set; }
+        public int InternalPort { get; private set; }
+        public string InternalClient { get; private set; }
+        public bool Enabled { get; private set; }
+        public string PortMappingDescription { get; private set; }
+        public int LeaseDuration { get; private set; }
     }
 }

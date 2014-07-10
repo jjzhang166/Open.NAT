@@ -39,12 +39,12 @@ namespace Open.Nat
             _index = index;
         }
 
-        public override IDictionary<string,object> ToXml()
+        public override IDictionary<string, object> ToXml()
         {
             return new Dictionary<string, object>
-                {
-                    {"NewPortMappingIndex", _index}
-                };
+                       {
+                           {"NewPortMappingIndex", _index}
+                       };
         }
     }
 }

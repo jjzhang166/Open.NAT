@@ -25,21 +25,21 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using System.Collections.Generic;
 using System.Xml;
 
 namespace Open.Nat
 {
     internal class SoapClient
     {
-        private readonly Uri _url;
         private readonly string _serviceType;
+        private readonly Uri _url;
 
         public SoapClient(Uri url, string serviceType)
         {
@@ -49,9 +49,10 @@ namespace Open.Nat
 
         public async Task<XmlDocument> InvokeAsync(string operationName, IDictionary<string, object> args)
         {
-            NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "SOAPACTION: **{0}** url:{1}", operationName, _url);
-            var messageBody = BuildMessageBody(operationName, args);
-            var request = BuildHttpWebRequest(operationName, messageBody);
+            NatDiscoverer.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "SOAPACTION: **{0}** url:{1}", operationName,
+                                                 _url);
+            byte[] messageBody = BuildMessageBody(operationName, args);
+            HttpWebRequest request = BuildHttpWebRequest(operationName, messageBody);
 
             if (messageBody.Length > 0)
             {
@@ -61,42 +62,43 @@ namespace Open.Nat
                 }
             }
 
-            WebResponse response = null;
-            try
+            using(var response = await GetWebResponse(request))
             {
-                try
-                {
-                    response = await request.GetResponseAsync();
-                }
-                catch (WebException ex)
-                {
-                    // Even if the request "failed" i want to continue on to read out the response from the router
-                    response = ex.Response as HttpWebResponse;
-                    if (response == null)
-                        throw;
-                }
-
                 var stream = response.GetResponseStream();
                 var contentLength = response.ContentLength;
 
                 var reader = new StreamReader(stream, Encoding.UTF8);
-                // Read out the content of the message, hopefully picking 
-                // everything up in the case where we have no contentlength
 
-                var responseBody = contentLength != 1
+                var responseBody = contentLength != -1
                                     ? reader.ReadAsMany((int) contentLength)
                                     : reader.ReadToEnd();
 
                 var responseXml = GetXmlDocument(responseBody);
-                NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "Response: \n{0}", responseXml.ToPrintableXML());
+                NatDiscoverer.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "Response: \n{0}", responseXml.ToPrintableXml());
 
+                response.Close();
                 return responseXml;
             }
-            finally
+        }
+
+        private static async Task<WebResponse> GetWebResponse(WebRequest request)
+        {
+            WebResponse response;
+            try
             {
-                if (response != null)
-                    response.Close();
+                response = await request.GetResponseAsync();
             }
+            catch (WebException ex)
+            {
+                NatDiscoverer.TraceSource.TraceEvent(TraceEventType.Verbose, 0, "WebException status: {0}", ex.Status);
+
+                // Even if the request "failed" we need to continue reading the response from the router
+                response = ex.Response as HttpWebResponse;
+
+                if (response == null)
+                    throw;
+            }
+            return response;
         }
 
         private HttpWebRequest BuildHttpWebRequest(string operationName, byte[] messageBody)
@@ -120,15 +122,16 @@ namespace Open.Nat
             sb.AppendLine("      <u:" + operationName + " xmlns:u=\"" + _serviceType + "\">");
             foreach (var a in args)
             {
-                sb.AppendLine("         <" + a.Key + ">" + Convert.ToString(a.Value, CultureInfo.InvariantCulture) + "</" + a.Key + ">");
+                sb.AppendLine("         <" + a.Key + ">" + Convert.ToString(a.Value, CultureInfo.InvariantCulture) +
+                              "</" + a.Key + ">");
             }
             sb.AppendLine("      </u:" + operationName + ">");
             sb.AppendLine("   </s:Body>");
             sb.Append("</s:Envelope>\r\n\r\n");
-            var requestBody = sb.ToString();
+            string requestBody = sb.ToString();
 
-            NatUtility.TraceSource.TraceEvent(TraceEventType.Verbose, 0, requestBody);
-            var messageBody = Encoding.UTF8.GetBytes(requestBody);
+            NatDiscoverer.TraceSource.TraceEvent(TraceEventType.Verbose, 0, requestBody);
+            byte[] messageBody = Encoding.UTF8.GetBytes(requestBody);
             return messageBody;
         }
 
@@ -146,9 +149,9 @@ namespace Open.Nat
             // Check to see if we have a fault code message.
             if ((node = doc.SelectSingleNode("//errorNs:UPnPError", nsm)) != null)
             {
-                var code = Convert.ToInt32(node.GetXmlElementText("errorCode"), CultureInfo.InvariantCulture);
-                var errorMessage = node.GetXmlElementText("errorDescription");
-                NatUtility.TraceSource.LogWarn("Server failed with error: {0} - {1}", code, errorMessage);
+                int code = Convert.ToInt32(node.GetXmlElementText("errorCode"), CultureInfo.InvariantCulture);
+                string errorMessage = node.GetXmlElementText("errorDescription");
+                NatDiscoverer.TraceSource.LogWarn("Server failed with error: {0} - {1}", code, errorMessage);
                 throw new MappingException(code, errorMessage);
             }
 

@@ -25,15 +25,14 @@
 //
 
 using System;
-using System.Globalization;
 using System.Xml;
 
 namespace Open.Nat
 {
     internal abstract class ResponseMessageBase
     {
-        protected string ServiceType;
         private readonly XmlDocument _document;
+        protected string ServiceType;
 
         protected ResponseMessageBase(XmlDocument response, string serviceType)
         {
@@ -46,13 +45,12 @@ namespace Open.Nat
             var nsm = new XmlNamespaceManager(_document.NameTable);
             nsm.AddNamespace("responseNs", ServiceType);
 
-            var typeName = GetType().Name;
-            var messageName = typeName.Substring(0, typeName.Length - "Message".Length);
-            var node = _document.SelectSingleNode("//responseNs:" + messageName, nsm);
+            string typeName = GetType().Name;
+            string messageName = typeName.Substring(0, typeName.Length - "Message".Length);
+            XmlNode node = _document.SelectSingleNode("//responseNs:" + messageName, nsm);
             if (node == null) throw new InvalidOperationException("The response is invalid: " + messageName);
 
             return node;
         }
-
     }
 }

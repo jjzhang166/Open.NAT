@@ -23,14 +23,17 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-using System;
+
+using System.Collections.Generic;
+using System.Net;
+using System.Threading;
 
 namespace Open.Nat
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    public class DiscoveryTimeoutEventArgs : EventArgs
+    internal interface ISearcher
     {
+        void Search(CancellationToken cancellationToken);
+        IEnumerable<NatDevice> Receive();
+        NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
     }
 }

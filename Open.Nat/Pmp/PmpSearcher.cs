@@ -30,8 +30,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace Open.Nat
 {
@@ -48,67 +48,51 @@ namespace Open.Nat
             CreateSocketsAndAddGateways();
         }
 
-		private void CreateSocketsAndAddGateways()
-		{
+        private void CreateSocketsAndAddGateways()
+        {
             Sockets = new List<UdpClient>();
             _gatewayLists = new Dictionary<UdpClient, IEnumerable<IPEndPoint>>();
 
             try
             {
-                foreach (var n in NetworkInterface.GetAllNetworkInterfaces())
+                List<IPEndPoint> gatewayList = _ipprovider.GatewayAddresses()
+                    .Select(ip => new IPEndPoint(ip, PmpConstants.ServerPort))
+                    .ToList();
+
+                if (!gatewayList.Any())
                 {
-                    if (n.OperationalStatus != OperationalStatus.Up && n.OperationalStatus != OperationalStatus.Unknown)
-                        continue;
+                    gatewayList.AddRange(
+                        _ipprovider.DnsAddresses()
+                            .Select(ip => new IPEndPoint(ip, PmpConstants.ServerPort)));
+                }
 
-                    var properties = n.GetIPProperties();
-                    var gatewayList = new List<IPEndPoint>();
+                if (!gatewayList.Any()) return;
 
-                    foreach (var gateway in properties.GatewayAddresses)
+                foreach (IPAddress address in _ipprovider.UnicastAddresses())
+                {
+                    UdpClient client;
+
+                    try
                     {
-                        if (gateway.Address.AddressFamily != AddressFamily.InterNetwork) continue;
-                        gatewayList.Add(new IPEndPoint(gateway.Address, PmpConstants.ServerPort));
+                        client = new UdpClient(new IPEndPoint(address, 0));
+                    }
+                    catch (SocketException)
+                    {
+                        continue; // Move on to the next address.
                     }
 
-                    if (gatewayList.Count == 0)
-                    {
-                        /* Mono on OSX doesn't give any gateway addresses, so check DNS entries */
-                        foreach (var gateway in properties.DnsAddresses)
-                        {
-                            if (gateway.AddressFamily != AddressFamily.InterNetwork) continue;
-                            gatewayList.Add(new IPEndPoint(gateway, PmpConstants.ServerPort));
-                        }
-                    }
-
-                    if (gatewayList.Count == 0) continue;
-
-                    foreach (var address in properties.UnicastAddresses)
-                    {
-                        if (address.Address.AddressFamily != AddressFamily.InterNetwork) continue;
-
-                        UdpClient client;
-
-                        try
-                        {
-                            client = new UdpClient(new IPEndPoint(address.Address, 0));
-                        }
-                        catch (SocketException)
-                        {
-                            continue; // Move on to the next address.
-                        }
-
-                        _gatewayLists.Add(client, gatewayList); 
-                        Sockets.Add(client);
-                    }
+                    _gatewayLists.Add(client, gatewayList);
+                    Sockets.Add(client);
                 }
             }
             catch (Exception e)
             {
-                NatUtility.TraceSource.LogError("There was a problem finding gateways: " + e);
+                NatDiscoverer.TraceSource.LogError("There was a problem finding gateways: " + e);
                 // NAT-PMP does not use multicast, so there isn't really a good fallback.
             }
-		}
+        }
 
-		protected override void Search (UdpClient client)
+        protected override void Discover(UdpClient client, CancellationToken cancelationToken)
         {
             // Sort out the time for the next search first. The spec says the 
             // timeout should double after each attempt. Once it reaches 64 seconds
@@ -116,18 +100,19 @@ namespace Open.Nat
             NextSearch = DateTime.UtcNow.AddMilliseconds(_timeout);
             _timeout *= 2;
 
-            // We've tried 9 times as per spec, try searching again in 5 minutes
-            if (_timeout == 128 * 1000)
+            if (_timeout >= 3000)
             {
                 _timeout = 250;
-                NextSearch = DateTime.UtcNow.AddMinutes(5);
+                NextSearch = DateTime.UtcNow.AddSeconds(10);
                 return;
             }
 
             // The nat-pmp search message. Must be sent to GatewayIP:53531
-            var buffer = new[] { PmpConstants.Version, PmpConstants.OperationExternalAddressRequest };
-            foreach (var gatewayEndpoint in _gatewayLists[client])
+            var buffer = new[] {PmpConstants.Version, PmpConstants.OperationExternalAddressRequest};
+            foreach (IPEndPoint gatewayEndpoint in _gatewayLists[client])
             {
+                if (cancelationToken.IsCancellationRequested) return;
+
                 client.Send(buffer, buffer.Length, gatewayEndpoint);
             }
         }
@@ -138,23 +123,23 @@ namespace Open.Nat
                 .Any(x => x.Address.Equals(address));
         }
 
-        public override void Handle(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
+        public override NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
         {
             if (!IsSearchAddress(endpoint.Address)
-                || response.Length != 12 
+                || response.Length != 12
                 || response[0] != PmpConstants.Version
                 || response[1] != PmpConstants.ServerNoop)
-                return;
+                return null;
 
             int errorcode = IPAddress.NetworkToHostOrder(BitConverter.ToInt16(response, 2));
             if (errorcode != 0)
-                NatUtility.TraceSource.LogError("Non zero error: {0}", errorcode);
+                NatDiscoverer.TraceSource.LogError("Non zero error: {0}", errorcode);
 
-            var publicIp = new IPAddress(new[] { response[8], response[9], response[10], response[11] });
-            NextSearch = DateTime.Now.AddMinutes(5);
+            var publicIp = new IPAddress(new[] {response[8], response[9], response[10], response[11]});
+            //NextSearch = DateTime.Now.AddMinutes(5);
 
             _timeout = 250;
-            OnDeviceFound(new DeviceEventArgs(new PmpNatDevice(endpoint.Address, publicIp)));
+            return new PmpNatDevice(endpoint.Address, publicIp);
         }
     }
 }

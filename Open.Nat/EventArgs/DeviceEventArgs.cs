@@ -28,7 +28,7 @@
 
 namespace Open.Nat
 {
-	public class DeviceEventArgs : System.EventArgs
+    internal class DeviceEventArgs : System.EventArgs
 	{
 	    public DeviceEventArgs(NatDevice device)
 		{
