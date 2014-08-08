@@ -31,16 +31,16 @@ using System.Xml;
 
 namespace Open.Nat
 {
-    internal class GetGenericPortMappingEntryResponseMessage : ResponseMessageBase
+    internal class GetPortMappingEntryResponseMessage : ResponseMessageBase
     {
-        public GetGenericPortMappingEntryResponseMessage(XmlDocument response, string serviceType, bool _genericMapping)
-            : base(response, serviceType)
+        internal GetPortMappingEntryResponseMessage(XmlDocument response, string serviceType, bool genericMapping)
+            : base(response, serviceType, genericMapping ? "GetGenericPortMappingEntryResponseMessage" : "GetSpecificPortMappingEntryResponseMessage")
         {
             XmlNode data = GetNode();
 
-            RemoteHost = (_genericMapping) ? data.GetXmlElementText("NewRemoteHost") : string.Empty;
-            ExternalPort = (_genericMapping) ? Convert.ToInt32(data.GetXmlElementText("NewExternalPort")) : -1;
-            if (_genericMapping)
+            RemoteHost = (genericMapping) ? data.GetXmlElementText("NewRemoteHost") : string.Empty;
+            ExternalPort = (genericMapping) ? Convert.ToInt32(data.GetXmlElementText("NewExternalPort")) : ushort.MaxValue;
+            if (genericMapping)
                 Protocol = data.GetXmlElementText("NewProtocol").Equals("TCP", StringComparison.InvariantCultureIgnoreCase)
                                ? Protocol.Tcp
                                : Protocol.Udp;

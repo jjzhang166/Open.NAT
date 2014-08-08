@@ -34,7 +34,7 @@ namespace Open.Nat
     internal class GetExternalIPAddressResponseMessage : ResponseMessageBase
     {
         public GetExternalIPAddressResponseMessage(XmlDocument response, string serviceType)
-            : base(response, serviceType)
+            : base(response, serviceType, "GetExternalIPAddressResponseMessage")
         {
             string ip = GetNode().GetXmlElementText("NewExternalIPAddress");
             ExternalIPAddress = IPAddress.Parse(ip);

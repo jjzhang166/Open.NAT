@@ -33,11 +33,13 @@ namespace Open.Nat
     {
         private readonly XmlDocument _document;
         protected string ServiceType;
+        private readonly string _typeName;
 
-        protected ResponseMessageBase(XmlDocument response, string serviceType)
+        protected ResponseMessageBase(XmlDocument response, string serviceType, string typeName)
         {
             _document = response;
             ServiceType = serviceType;
+            _typeName = typeName;
         }
 
         protected XmlNode GetNode()
@@ -45,7 +47,7 @@ namespace Open.Nat
             var nsm = new XmlNamespaceManager(_document.NameTable);
             nsm.AddNamespace("responseNs", ServiceType);
 
-            string typeName = GetType().Name;
+            string typeName = _typeName;
             string messageName = typeName.Substring(0, typeName.Length - "Message".Length);
             XmlNode node = _document.SelectSingleNode("//responseNs:" + messageName, nsm);
             if (node == null) throw new InvalidOperationException("The response is invalid: " + messageName);

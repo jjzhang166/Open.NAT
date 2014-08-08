@@ -80,20 +80,22 @@ namespace Open.Nat
                         mapping.Lifetime = 0;
                         // We create the mapping anyway. It must be released on shutdown.
                         mapping.LifetimeType = MappingLifetime.Session;
+                        CreatePortMapAsync(mapping);
                         break;
                     case UpnpConstants.SamePortValuesRequired:
                         NatDiscoverer.TraceSource.LogWarn("Same Port Values Required - Using internal port {0}", mapping.PrivatePort);
                         mapping.PublicPort = mapping.PrivatePort;
+                        CreatePortMapAsync(mapping);
                         break;
                     case UpnpConstants.RemoteHostOnlySupportsWildcard:
                         NatDiscoverer.TraceSource.LogWarn("Remote Host Only Supports Wildcard");
                         mapping.PublicIP = IPAddress.None;
+                        CreatePortMapAsync(mapping);
                         break;
                     //case UpnpConstants.ExternalPortOnlySupportsWildcard:
                     //    NatUtility.TraceSource.LogWarn("External Port Only Supports Wildcard");
                     //    break;
                 }
-                CreatePortMapAsync(mapping);
             }
         }
 
@@ -130,7 +132,7 @@ namespace Open.Nat
                         .InvokeAsync("GetGenericPortMappingEntry", message.ToXml())
                         .TimeoutAfter(TimeSpan.FromSeconds(4));
 
-                    var responseMessage = new GetGenericPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, true);
+                    var responseMessage = new GetPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, true);
 
                     var mapping = new Mapping(responseMessage.Protocol
                         , IPAddress.Parse(responseMessage.InternalClient)
@@ -163,7 +165,7 @@ namespace Open.Nat
                     .InvokeAsync("GetSpecificPortMappingEntry", message.ToXml())
                     .TimeoutAfter(TimeSpan.FromSeconds(4));
 
-                var messageResponse = new GetGenericPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, false);
+                var messageResponse = new GetPortMappingEntryResponseMessage(responseData, DeviceInfo.ServiceType, false);
 
                 return new Mapping(messageResponse.Protocol
                     , IPAddress.Parse(messageResponse.InternalClient)
